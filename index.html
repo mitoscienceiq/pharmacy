@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نظام إدارة الصيدلية</title>
+<meta name="theme-color" content="#0f6b55">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="الصيدلية">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Noto+Kufi+Arabic:wght@600;700&display=swap">
+<style>
+:root{
+  --bg:#f3f5f4; --surface:#fff; --sunk:#e8ecea; --line:#d3dad7;
+  --fg:#1b2422; --muted:#5d6b67;
+  --accent:#0f6b55; --accent-ink:#fff; --accent-soft:#dcefe8;
+  --pending:#a35d00; --pending-soft:#fbecd5;
+  --done:#1d5fa8; --done-soft:#dde9f7;
+  --danger:#b3261e; --danger-soft:#f8dedc;
+  --f-display:"Noto Kufi Arabic","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --f-body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif; --r:10px;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#111816; --surface:#1a2320; --sunk:#222d2a; --line:#33413d; --fg:#e5ecea; --muted:#9aaaa5;
+  --accent:#4cc3a0; --accent-ink:#06231b; --accent-soft:#16352c; --pending:#f0b45a; --pending-soft:#3a2b13;
+  --done:#7fb2ee; --done-soft:#1b2c42; --danger:#f08a82; --danger-soft:#3d1c1a; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6}
+[hidden]{display:none!important}
+.wrap{max-width:760px;margin:0 auto;padding:12px 16px 48px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0 4px}
+h1{font-family:var(--f-display);font-size:1.2rem;margin:0}
+.sub{color:var(--muted);font-size:.85rem;margin:0}
+.who{font-size:.8rem;color:var(--muted);text-align:left}
+nav.tabs{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;gap:6px;padding:10px 0;border-bottom:1px solid var(--line);margin-bottom:16px}
+nav.tabs button{flex:1;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;font-weight:500;font-size:.9rem;padding:8px 4px;border-radius:999px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;min-width:0}
+nav.tabs button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.count{font-size:.72rem;background:var(--pending-soft);color:var(--pending);border-radius:999px;padding:0 7px}
+nav.tabs button.on .count{background:var(--accent-ink);color:var(--accent)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:grid;gap:14px}
+label{display:grid;gap:4px;font-weight:500;font-size:.9rem}
+.hint{font-weight:400;color:var(--muted);font-size:.8rem}
+input[type=text],input[type=password],input[type=number],input[type=date],select,textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:60px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1 1 160px;min-width:0}
+.btn{font:inherit;font-weight:600;border-radius:8px;padding:10px 16px;border:1px solid transparent;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn.ghost{background:transparent;color:var(--fg);border-color:var(--line)}
+.btn.small{padding:6px 10px;font-size:.85rem}
+.linkbtn{background:none;border:0;color:var(--accent);font:inherit;font-size:.85rem;cursor:pointer;padding:0;text-decoration:underline}
+.linkbtn.red{color:var(--danger)}
+.photo-drop{border:2px dashed var(--line);border-radius:var(--r);background:var(--bg);min-height:150px;display:grid;place-items:center;text-align:center;cursor:pointer;overflow:hidden;padding:12px}
+.photo-drop img{max-height:260px;max-width:100%;border-radius:6px}
+.photo-drop .ph{color:var(--muted)}.photo-drop .ph b{display:block;color:var(--fg);font-family:var(--f-display)}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:500;z-index:20;max-width:90vw;text-align:center}
+.note{padding:10px 12px;border-radius:8px;background:var(--pending-soft);color:var(--pending);font-size:.88rem;margin-bottom:12px}
+.note.err{background:var(--danger-soft);color:var(--danger)}
+.note.ok{background:var(--accent-soft);color:var(--accent)}
+.group{display:grid;gap:8px;margin-bottom:20px}
+.group-h{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.group-h h2{font-family:var(--f-display);font-size:1rem;margin:0}
+.items{display:grid;gap:8px}
+.item{display:grid;grid-template-columns:auto 64px 1fr;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.item.sel{border-color:var(--accent);background:var(--accent-soft)}
+.item input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
+.thumb{width:64px;height:64px;border-radius:6px;background:var(--sunk);object-fit:cover;display:grid;place-items:center;color:var(--muted);font-size:.7rem;cursor:pointer}
+.meta{min-width:0}.name{font-weight:600;overflow-wrap:anywhere}
+.line2{color:var(--muted);font-size:.82rem;display:flex;gap:10px;flex-wrap:wrap}
+.qty{font-weight:600;color:var(--fg)}
+.pill{display:inline-block;font-size:.75rem;font-weight:600;padding:1px 9px;border-radius:999px;white-space:nowrap}
+.pill.pending{background:var(--pending-soft);color:var(--pending)}
+.pill.delivered{background:var(--done-soft);color:var(--done)}
+.pill.credited{background:var(--accent-soft);color:var(--accent)}
+.handover{position:sticky;bottom:10px;background:var(--surface);border:1px solid var(--accent);border-radius:var(--r);padding:12px;display:grid;gap:10px;box-shadow:0 6px 20px rgb(0 0 0 / .15)}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.stat{flex:1 1 120px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.stat b{display:block;font-size:1.3rem;font-family:var(--f-display)}.stat span{color:var(--muted);font-size:.8rem}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.86rem;min-width:640px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);vertical-align:middle}
+th{background:var(--sunk);font-weight:600;font-size:.8rem;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td .thumb{width:40px;height:40px}
+.empty-state{text-align:center;color:var(--muted);padding:36px 12px;background:var(--surface);border:1px dashed var(--line);border-radius:var(--r)}
+.empty-state b{display:block;color:var(--fg);font-family:var(--f-display);margin-bottom:4px}
+.lightbox{position:fixed;inset:0;background:rgb(0 0 0 / .85);display:grid;place-items:center;z-index:30;padding:20px}
+.lightbox img{max-height:90vh;max-width:100%;border-radius:8px}
+.chip{background:var(--sunk);border-radius:999px;padding:3px 6px 3px 12px;font-size:.85rem;display:inline-flex;gap:6px;align-items:center}
+.chip button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+h3{font-family:var(--f-display);font-size:1rem;margin:0}
+.login{max-width:380px;margin:12vh auto 0}
+.urow{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--line)}
+.urow:last-child{border-bottom:0}
+.pw{position:relative;display:block;min-width:0}
+.pw input{padding-left:44px}
+.pw .eye{position:absolute;left:4px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;background:none;color:var(--muted);cursor:pointer;display:grid;place-items:center;border-radius:6px;padding:0}
+.pw .eye:hover{color:var(--fg)}
+.pw .eye svg{width:20px;height:20px}
+.credit{text-align:center;color:var(--muted);font-size:.78rem;letter-spacing:.04em;margin:14px 0 0}
+.credit b{color:var(--accent);font-weight:600}
+nav.tabs button.gear{flex:0 0 42px;padding:8px 0}
+nav.tabs button.gear svg{width:18px;height:18px}
+.search-row{display:flex;gap:8px;align-items:stretch;min-width:0}
+.search-row input{flex:1;min-width:0}
+.icon-btn{flex:0 0 auto;padding:0 12px;display:grid;place-items:center}
+.icon-btn svg{width:22px;height:22px}
+input[type=search]{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:11px 12px;width:100%;min-width:0;font-size:1rem}
+#pResult{margin-top:14px}
+.pcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:grid;gap:12px}
+.pcard .pname{font-family:var(--f-display);font-size:1.15rem;font-weight:700;overflow-wrap:anywhere;direction:ltr;text-align:right}
+.pcard .psci{color:var(--muted);font-size:.9rem;direction:ltr;text-align:right}
+.prices{display:flex;gap:10px;flex-wrap:wrap}
+.price{flex:1 1 140px;background:var(--accent-soft);border-radius:var(--r);padding:12px 14px}
+.price span{display:block;font-size:.8rem;color:var(--muted)}
+.price b{font-family:var(--f-display);font-size:1.7rem;color:var(--accent);font-variant-numeric:tabular-nums}
+.price small{color:var(--muted);margin-right:4px}
+.price.buy{background:var(--sunk)}
+.price.buy b{color:var(--fg);font-size:1.25rem}
+.noprice{background:var(--pending-soft);color:var(--pending);border-radius:var(--r);padding:12px 14px;font-weight:500}
+.pmeta{color:var(--muted);font-size:.8rem;display:flex;gap:12px;flex-wrap:wrap}
+.codes{direction:ltr;font-family:ui-monospace,Menlo,monospace;font-size:.8rem;color:var(--muted)}
+.pactions{display:flex;gap:8px;flex-wrap:wrap}
+.alts{border-top:1px solid var(--line);padding-top:10px;display:grid;gap:6px}
+.alts h4{margin:0;font-size:.85rem;color:var(--muted);font-weight:600}
+.plist{display:grid;gap:6px;margin-top:10px}
+.prow{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 12px;cursor:pointer;text-align:right;font:inherit;color:var(--fg);width:100%}
+.prow:hover{border-color:var(--accent)}
+.prow .l{min-width:0;direction:ltr;text-align:right}
+.prow .l div{overflow-wrap:anywhere}
+.prow .l .hint{display:block}
+.prow .r{flex:0 0 auto;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}
+.prow .r.none{color:var(--muted);font-weight:400;font-size:.8rem}
+.modal{position:fixed;inset:0;background:rgb(0 0 0 / .6);display:grid;place-items:center;z-index:40;padding:16px}
+.modal-card{background:var(--surface);border-radius:var(--r);padding:14px;width:min(440px,100%);display:grid;gap:10px}
+.modal-h{display:flex;justify-content:space-between;align-items:center}
+.modal-h .x{border:0;background:none;font-size:1.6rem;color:var(--muted);cursor:pointer;line-height:1}
+#reader{width:100%;min-height:220px;background:#000;border-radius:8px;overflow:hidden}
+#reader video{width:100%!important;display:block}
+label.chk{display:flex;gap:8px;align-items:flex-start;font-weight:400}
+label.chk input{margin-top:5px;accent-color:var(--accent)}
+.bar{height:6px;background:var(--sunk);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- LOGIN -->
+<section id="loginView" hidden>
+  <form class="panel login" id="loginForm">
+    <div><h1>نظام إدارة الصيدلية</h1><p class="sub">سجّل دخولك بحسابك</p></div>
+    <label>اسم المستخدم <input type="text" id="lUser" autocomplete="username" autocapitalize="off" dir="ltr"></label>
+    <label>كلمة السر <input type="password" id="lPass" autocomplete="current-password" dir="ltr"></label>
+    <div id="lErr" class="note err" hidden></div>
+    <button class="btn" id="lBtn">دخول</button>
+  </form>
+  <p class="credit" dir="ltr">Powered by <b>MJK</b></p>
+</section>
+
+<!-- APP -->
+<section id="appView" hidden>
+  <header class="top">
+    <div><h1>نظام إدارة الصيدلية</h1><p class="sub">الأسعار والمردودات</p></div>
+    <div class="who" id="who"></div>
+  </header>
+  <nav class="tabs">
+    <button data-view="prices" class="on">الأسعار</button>
+    <button data-view="add">مردود</button>
+    <button data-view="pending">التسليم <span class="count" id="pendingCount">0</span></button>
+    <button data-view="report">الكشوفات</button>
+    <button data-view="settings" class="gear" aria-label="الإعدادات" title="الإعدادات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </nav>
+  <div id="banner"></div>
+
+  <section id="view-prices">
+    <div class="panel">
+      <div class="search-row">
+        <input type="search" id="pq" placeholder="امسح الباركود أو اكتب اسم الدواء" autocomplete="off" dir="auto" enterkeyhint="search">
+        <button class="btn icon-btn" id="scanBtn" type="button" aria-label="مسح الباركود بالكاميرا" title="مسح بالكاميرا"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M17 8v8"/></svg></button>
+      </div>
+      <div class="hint" id="catInfo">جاري تحميل قائمة الأدوية…</div>
+    </div>
+    <div id="pResult"></div>
+    <div id="pList"></div>
+  </section>
+
+  <section id="view-add" hidden>
+    <form class="panel" id="addForm">
+      <div class="photo-drop" id="photoDrop" tabindex="0">
+        <div class="ph" id="photoPh"><b>📷 صورة الايتم</b>اضغط لتصوير الايتم<br><span class="hint">خلي الاسم والعدد واضحين</span></div>
+        <img id="photoPreview" alt="" hidden>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" hidden>
+      <div id="aiHint" class="note" hidden style="margin:0"></div>
+      <label>المذخر <select id="supplier"></select></label>
+      <div class="row">
+        <label>اسم الايتم <span class="hint">(اختياري إذا واضح بالصورة)</span>
+          <span class="search-row"><input type="text" id="itemName" dir="auto"><button class="btn ghost icon-btn" id="addScan" type="button" aria-label="اسم الايتم من الباركود" title="من الباركود"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M17 8v8"/></svg></button></span></label>
+        <label style="flex:0 1 110px">العدد <input type="number" id="qty" min="1" inputmode="numeric" placeholder="1"></label>
+      </div>
+      <div class="row">
+        <label>سبب الإرجاع
+          <select id="reason"><option value="">— بدون —</option><option>قرب انتهاء الصلاحية</option><option>منتهي الصلاحية</option><option>تالف / مكسور</option><option>خطأ بالطلبية</option><option>غير مطلوب / فائض</option><option>أخرى</option></select>
+        </label>
+        <label>رقم القائمة <span class="hint">(اختياري)</span><input type="text" id="invoice" inputmode="numeric"></label>
+      </div>
+      <label>ملاحظة <span class="hint">(اختياري)</span><textarea id="note"></textarea></label>
+      <button class="btn" id="saveBtn">حفظ المردود</button>
+    </form>
+  </section>
+
+  <section id="view-pending" hidden>
+    <div id="pendingList"></div>
+    <div class="handover" id="handover" hidden>
+      <div><b id="selCount">0</b> ايتم محدد للتسليم</div>
+      <div class="row">
+        <input type="text" id="repName" placeholder="اسم المندوب المستلم">
+        <button class="btn" id="deliverBtn" type="button" style="flex:0 0 auto">تأكيد التسليم</button>
+        <button class="btn ghost" id="clearSelBtn" type="button" style="flex:0 0 auto">إلغاء</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-report" hidden>
+    <div class="panel" style="margin-bottom:14px">
+      <div class="row">
+        <label>المذخر <select id="rSupplier"></select></label>
+        <label>الحالة
+          <select id="rStatus"><option value="">الكل</option><option value="pending">بانتظار التسليم</option><option value="delivered">مسلّم – لم يُنزّل من الحساب</option><option value="credited">مسلّم ومنزّل من الحساب</option></select>
+        </label>
+      </div>
+      <div class="row">
+        <label>من تاريخ <input type="date" id="rFrom"></label>
+        <label>إلى تاريخ <input type="date" id="rTo"></label>
+      </div>
+      <div class="row">
+        <button class="btn ghost small" id="copyBtn" type="button" style="flex:0 0 auto">نسخ الكشف (واتساب)</button>
+        <button class="btn ghost small" id="csvBtn" type="button" style="flex:0 0 auto">تنزيل Excel</button>
+        <button class="btn ghost small" id="refreshBtn" type="button" style="flex:0 0 auto">تحديث</button>
+      </div>
+      <textarea id="copyFallback" hidden readonly style="min-height:150px"></textarea>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div id="reportBody"></div>
+  </section>
+
+  <section id="view-settings" hidden>
+    <div style="display:grid;gap:14px">
+      <div class="panel" id="adminItems" hidden>
+        <h3>قائمة الأدوية</h3>
+        <p class="hint" id="itemsCount"></p>
+        <label>ملف Excel <span class="hint">(تصدير ميدجرام أو أي ملف بيه عمود "اسم المادة" و"الباركود")</span>
+          <input type="file" id="impFile" accept=".xlsx,.xls,.csv"></label>
+        <label class="chk"><input type="checkbox" id="impPrices"> حدّث الأسعار من الملف <span class="hint">(إذا ما مأشر: الملف يملي بس الأسعار الفارغة، وما يمسح الأسعار اللي عدّلها الكادر)</span></label>
+        <button class="btn small" id="impBtn" type="button">استيراد</button>
+        <div id="impMsg"></div>
+      </div>
+      <div class="panel" id="adminSupp" hidden>
+        <h3>المذاخر</h3>
+        <div class="row"><input type="text" id="newSupplier" placeholder="اسم مذخر جديد"><button class="btn small" id="addSupplierBtn" type="button" style="flex:0 0 auto">إضافة</button></div>
+        <div class="chips" id="suppList"></div>
+      </div>
+      <div class="panel" id="adminUsers" hidden>
+        <h3>حسابات الكادر</h3>
+        <div class="row">
+          <input type="text" id="nuName" placeholder="الاسم الظاهر (مثال: د. سارة)">
+          <input type="text" id="nuUser" placeholder="اسم المستخدم (إنكليزي)" dir="ltr" autocapitalize="off">
+        </div>
+        <div class="row">
+          <input type="text" id="nuPass" placeholder="كلمة السر (5 أحرف+)" dir="ltr">
+          <select id="nuRole"><option value="staff">صيدلاني</option><option value="admin">مدير</option></select>
+          <button class="btn small" id="addUserBtn" type="button" style="flex:0 0 auto">إضافة حساب</button>
+        </div>
+        <div id="userList"></div>
+      </div>
+      <div class="panel">
+        <h3>تغيير كلمة السر</h3>
+        <div class="row">
+          <input type="password" id="cpOld" placeholder="الحالية" dir="ltr">
+          <input type="password" id="cpNew" placeholder="الجديدة" dir="ltr">
+          <button class="btn small" id="cpBtn" type="button" style="flex:0 0 auto">تغيير</button>
+        </div>
+      </div>
+      <button class="btn ghost" id="logoutBtn" type="button">تسجيل الخروج</button>
+    </div>
+  </section>
+</section>
+</div>
+
+<div class="modal" id="scanModal" hidden>
+  <div class="modal-card">
+    <div class="modal-h"><b>مسح الباركود</b><button type="button" class="x" id="scanClose" aria-label="إغلاق">×</button></div>
+    <div id="reader"></div>
+    <div id="scanMsg" class="hint">وجّه الكاميرا على الباركود</div>
+    <label class="btn ghost" for="scanFile" style="text-align:center">صوّر الباركود بدل الكاميرا المباشرة</label>
+    <input type="file" id="scanFile" accept="image/*" capture="environment" hidden>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+<div class="lightbox" id="lightbox" hidden><img id="lightImg" alt=""></div>
+
+<script>
+(() => {   // كل كود الصفحة داخل دالة حتى أسماءه ما تتعارض ويه سكربتات Google
+const $ = id => document.getElementById(id);
+const S = { token:null, me:null, suppliers:[], items:[], photos:{}, photoData:null, selected:new Set(), view:'add', confirm:null };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fD = ms => ms ? new Date(ms).toLocaleDateString('en-GB') : '—';
+const fDT = ms => ms ? new Date(ms).toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+const stOf = it => it.status==='delivered' ? (it.credited?'credited':'delivered') : 'pending';
+const stLbl = {pending:'بانتظار التسليم', delivered:'مسلّم', credited:'منزّل من الحساب'};
+const store = { get:k=>{try{return localStorage.getItem(k)}catch(e){return null}}, set:(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}} };
+
+/* الصفحة تشتغل بمكانين: داخل Google (الرابط القديم) أو مستضافة برّه وتحجي ويه نفس الخادم بـ fetch */
+const IN_GAS = !!(window.google && google.script && google.script.run);
+const API_ID = 'AKfycbwMt-W24-c0wQ0_koptB3bCXJh702MX2fWgbWtt4WAgkYfKxdkD6-23wwCken03CQCpGw';
+function callFail(m){
+  m = String(m || 'صار خطأ').replace(/^Error:\s*/,'');
+  if(m.includes('AUTH')){ logoutLocal(); return new Error('انتهت الجلسة، سجّل دخول مرة ثانية'); }
+  return new Error(m);
+}
+function call(fn, ...args){
+  if(IN_GAS) return new Promise((res, rej) => google.script.run
+    .withSuccessHandler(res)
+    .withFailureHandler(e => rej(callFail((e && e.message) || String(e))))
+    [fn](...args));
+  const url = 'https:' + '/' + '/script.google.com/macros/s/' + API_ID + '/exec';
+  return fetch(url, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify({ fn, args }), redirect:'follow' })
+    .then(r => r.json(), () => { throw new Error('ما كدرت أوصل للخادم، تأكد من الإنترنت'); })
+    .catch(e => { throw e instanceof SyntaxError ? new Error('رد غريب من الخادم، جرّب مرة ثانية') : e; })
+    .then(d => { if(d && d.ok) return d.result; throw callFail(d && d.error); });
+}
+function toast(m){ const t=$('toast'); t.textContent=m; t.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>t.hidden=true,2800); }
+const fail = e => toast(e.message || 'صار خطأ');
+
+/* ---------- login ---------- */
+$('loginForm').addEventListener('submit', async e => {
+  e.preventDefault(); $('lErr').hidden=true; $('lBtn').disabled=true;
+  try{ const r = await call('login', $('lUser').value, $('lPass').value); S.token=r.token; store.set('rt-token', r.token); $('lPass').value=''; await enter(); }
+  catch(err){ $('lErr').textContent=err.message; $('lErr').hidden=false; }
+  finally{ $('lBtn').disabled=false; }
+});
+function logoutLocal(){ document.querySelectorAll('.pw input').forEach(i=>{ i.type='password'; i.nextSibling.innerHTML=EYE; }); S.token=null; store.set('rt-token',null); catReset(); $('appView').hidden=true; $('loginView').hidden=false; }
+$('logoutBtn').addEventListener('click', async ()=>{ try{ await call('logout', S.token) }catch(e){} logoutLocal(); });
+
+async function enter(){
+  $('loginView').hidden=true; $('appView').hidden=false;
+  $('banner').innerHTML='<div class="note">جاري التحميل…</div>';
+  await refresh();
+  $('banner').innerHTML='';
+  if(!S.me) return;
+  catLoad();
+  const v = store.get('rt-view');
+  setView(['prices','add','pending','report','settings'].includes(v) ? v : 'prices');
+  catSync();
+}
+async function refresh(){
+  try{
+    const d = await call('getData', S.token);
+    S.me=d.me; S.suppliers=d.suppliers; S.items=d.returns;
+    $('who').textContent = S.me.displayName + (S.me.role==='admin'?' · مدير':'');
+    const isAdmin = S.me.role==='admin';
+    $('adminSupp').hidden = !isAdmin; $('adminUsers').hidden = !isAdmin; $('adminItems').hidden = !isAdmin;
+    if(isAdmin) loadUsers();
+    renderSuppliers(); render();
+  }catch(e){ fail(e); }
+}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => setView(b.dataset.view));
+function setView(v){
+  S.view=v; document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on', b.dataset.view===v));
+  ['prices','add','pending','report','settings'].forEach(x => $('view-'+x).hidden = x!==v);
+  store.set('rt-view', v);
+  clearInterval(setView.t);
+  if(v==='prices'){ renderPrices(); catSync(); setView.t=setInterval(()=>{ if(!document.hidden) catSync(); }, 90000); if(FINE) $('pq').focus(); }
+  else if(v==='add') render();
+  else { refresh(); if(v==='settings') catInfo(); }
+}
+
+/* ---------- photo ---------- */
+$('photoDrop').onclick = () => $('photoInput').click();
+$('photoInput').onchange = async e => {
+  const f=e.target.files[0]; if(!f) return;
+  try{ S.photoData = await compress(f); $('photoPreview').src=S.photoData; $('photoPreview').hidden=false; $('photoPh').hidden=true; }
+  catch(err){ toast('تعذّر قراءة الصورة'); return; }
+  autoRead(S.photoData);
+};
+
+/* قراءة اسم الايتم والعدد من الصورة — يملي الحقول الفارغة فقط، والصيدلاني يراجع */
+async function autoRead(data){
+  const tag = ++autoRead.n;
+  $('aiHint').hidden=false; $('aiHint').className='note'; $('aiHint').textContent='جاري قراءة الاسم والعدد من الصورة…';
+  try{
+    const r = await call('analyzePhoto', S.token, data);
+    if(tag!==autoRead.n) return;                       // صورة أحدث انأخذت
+    if(!r.ok){ $('aiHint').hidden = r.reason==='no_key'; $('aiHint').textContent='ما كدرت أقرا الصورة، اكتب الاسم والعدد يدوياً.'; return; }
+    const filled=[];
+    if(r.item && !$('itemName').value.trim()){ $('itemName').value=r.item; filled.push('الاسم'); }
+    if(r.qty && !$('qty').value){ $('qty').value=r.qty; filled.push('العدد'); }
+    if(filled.length){ $('aiHint').className='note ok'; $('aiHint').textContent=`انقرا ${filled.join(' و')} تلقائياً — راجعهم قبل الحفظ${r.qty?'':'. العدد ما انحسب، اكتبه يدوياً'}.`; }
+    else $('aiHint').textContent = r.item||r.qty ? 'الحقول مكتوبة من قبل، ما غيرتها.' : 'ما كدرت أقرا الصورة بوضوح، اكتب الاسم والعدد يدوياً.';
+  }catch(e){ if(tag===autoRead.n){ $('aiHint').textContent='ما كدرت أقرا الصورة، اكتب الاسم والعدد يدوياً.'; } }
+}
+autoRead.n=0;
+function compress(file){
+  return new Promise((res, rej) => {
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>{ let max=1200,q=.7,out;
+      for(let i=0;i<5;i++){ const s=Math.min(1,max/Math.max(img.width,img.height)), c=document.createElement('canvas');
+        c.width=Math.round(img.width*s); c.height=Math.round(img.height*s); c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+        out=c.toDataURL('image/jpeg',q); if(out.length<400000) break; max*=.8; q-=.07; }
+      URL.revokeObjectURL(url); res(out); };
+    img.onerror=rej; img.src=url;
+  });
+}
+
+/* ---------- suppliers ---------- */
+function renderSuppliers(){
+  const o = S.suppliers.map(s=>`<option>${esc(s)}</option>`).join('');
+  const a=$('supplier').value, b=$('rSupplier').value;
+  $('supplier').innerHTML = `<option value="">— اختر المذخر —</option>${o}`;
+  $('rSupplier').innerHTML = `<option value="">كل المذاخر</option>${o}`;
+  const last = store.get('rt-supp');
+  $('supplier').value = S.suppliers.includes(a) ? a : (S.suppliers.includes(last) ? last : '');
+  if(S.suppliers.includes(b)) $('rSupplier').value=b;
+  $('suppList').innerHTML = S.suppliers.length ? S.suppliers.map(s=>`<span class="chip">${esc(s)}<button data-rm="${esc(s)}" aria-label="حذف">×</button></span>`).join('') : '<span class="hint">أضف أول مذخر.</span>';
+  if(!S.suppliers.length && S.me && S.me.role!=='admin') $('banner').innerHTML='<div class="note">ماكو مذاخر بعد. اطلب من المدير يضيفها من الإعدادات.</div>';
+}
+$('addSupplierBtn').onclick = async () => { const n=$('newSupplier').value.trim(); if(!n) return;
+  try{ await call('addSupplier', S.token, n); $('newSupplier').value=''; toast('تمت الإضافة'); refresh(); }catch(e){ fail(e); } };
+$('suppList').onclick = async e => { const n=e.target.dataset.rm; if(!n) return;
+  try{ await call('removeSupplier', S.token, n); refresh(); }catch(err){ fail(err); } };
+
+/* ---------- add ---------- */
+$('addForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const sup=$('supplier').value;
+  if(!sup) return toast('اختر المذخر أولاً');
+  if(!S.photoData && !$('itemName').value.trim()) return toast('صوّر الايتم أو اكتب اسمه');
+  $('saveBtn').disabled=true; $('saveBtn').textContent='جاري الحفظ…';
+  try{
+    await call('addReturn', S.token, { supplier:sup, item:$('itemName').value, qty:$('qty').value, reason:$('reason').value, invoice:$('invoice').value, note:$('note').value, photo:S.photoData });
+    store.set('rt-supp', sup);
+    S.photoData=null; autoRead.n++; $('aiHint').hidden=true; $('photoPreview').hidden=true; $('photoPh').hidden=false; $('photoInput').value='';
+    ['itemName','qty','invoice','note'].forEach(i=>$(i).value=''); $('reason').value='';
+    toast('تم حفظ المردود ✓'); refresh();
+  }catch(err){ fail(err); }
+  finally{ $('saveBtn').disabled=false; $('saveBtn').textContent='حفظ المردود'; }
+});
+
+/* ---------- photos ---------- */
+const loadingP = new Set();
+function thumb(it){
+  if(!it.hasPhoto) return `<div class="thumb">بلا صورة</div>`;
+  if(S.photos[it.id]) return `<img class="thumb" src="${S.photos[it.id]}" data-zoom="${it.id}" alt="">`;
+  if(!loadingP.has(it.id)){ loadingP.add(it.id); call('getPhoto', S.token, it.id).then(d=>{ if(d){ S.photos[it.id]=d; render(); } }).catch(()=>{}); }
+  return `<div class="thumb">…</div>`;
+}
+document.addEventListener('click', e => { const z=e.target.dataset&&e.target.dataset.zoom; if(z&&S.photos[z]){ $('lightImg').src=S.photos[z]; $('lightbox').hidden=false; } });
+$('lightbox').onclick = () => $('lightbox').hidden=true;
+
+/* ---------- pending ---------- */
+function renderPending(){
+  const pend = S.items.filter(i=>i.status!=='delivered');
+  $('pendingCount').textContent = pend.length;
+  if(S.view!=='pending') return;
+  if(!pend.length){ $('pendingList').innerHTML=`<div class="empty-state"><b>لا توجد مردودات بانتظار التسليم</b>كل ايتم تضيفه يظهر هنا لحين تسليمه للمندوب.</div>`; $('handover').hidden=true; return; }
+  const g={}; pend.forEach(i=>(g[i.supplier] ||= []).push(i));
+  const isAdmin = S.me.role==='admin';
+  $('pendingList').innerHTML = Object.keys(g).sort((a,b)=>a.localeCompare(b,'ar')).map(sup=>{
+    const l=g[sup].sort((a,b)=>a.createdAt-b.createdAt), all=l.every(i=>S.selected.has(i.id));
+    return `<div class="group"><div class="group-h"><h2>${esc(sup)} <span class="hint">(${l.length})</span></h2>
+      <button class="linkbtn" data-selall="${esc(sup)}">${all?'إلغاء التحديد':'تحديد الكل'}</button></div>
+      <div class="items">${l.map(i=>`<div class="item ${S.selected.has(i.id)?'sel':''}">
+        <input type="checkbox" data-sel="${i.id}" ${S.selected.has(i.id)?'checked':''}>
+        ${thumb(i)}
+        <div class="meta"><div class="name">${esc(i.item||'(الاسم بالصورة)')} · <span class="qty">× ${i.qty}</span></div>
+          <div class="line2"><span>${fD(i.createdAt)}</span><span>${esc(i.createdBy||'')}</span>${i.reason?`<span>${esc(i.reason)}</span>`:''}${i.invoice?`<span>قائمة ${esc(i.invoice)}</span>`:''}</div>
+          ${i.note?`<div class="line2">${esc(i.note)}</div>`:''}
+          ${(isAdmin || i.createdBy===S.me.displayName)?`<div class="line2"><button class="linkbtn red" data-del="${i.id}">${S.confirm===i.id?'اضغط مرة ثانية لتأكيد الحذف':'حذف'}</button></div>`:''}
+        </div></div>`).join('')}</div></div>`;
+  }).join('');
+  const n=[...S.selected].filter(id=>pend.some(p=>p.id===id)).length;
+  $('selCount').textContent=n; $('handover').hidden=n===0;
+}
+$('pendingList').onchange = e => { const id=e.target.dataset.sel; if(!id) return; e.target.checked?S.selected.add(id):S.selected.delete(id); render(); };
+$('pendingList').onclick = async e => {
+  const sup=e.target.dataset.selall;
+  if(sup!==undefined){ const l=S.items.filter(i=>i.status!=='delivered'&&i.supplier===sup), all=l.every(i=>S.selected.has(i.id)); l.forEach(i=>all?S.selected.delete(i.id):S.selected.add(i.id)); return render(); }
+  const d=e.target.dataset.del; if(!d) return;
+  if(S.confirm!==d){ S.confirm=d; render(); setTimeout(()=>{ if(S.confirm===d){S.confirm=null;render();} },4000); return; }
+  S.confirm=null;
+  try{ await call('deleteReturn', S.token, d); S.selected.delete(d); toast('تم الحذف'); refresh(); }catch(err){ fail(err); }
+};
+$('clearSelBtn').onclick = () => { S.selected.clear(); render(); };
+$('deliverBtn').onclick = async () => {
+  const ids=[...S.selected], rep=$('repName').value.trim();
+  if(!rep){ toast('اكتب اسم المندوب'); return $('repName').focus(); }
+  $('deliverBtn').disabled=true;
+  try{ const n=await call('deliver', S.token, ids, rep); S.selected.clear(); store.set('rt-rep', rep); toast(`تم تسجيل تسليم ${n} ايتم ✓`); refresh(); }
+  catch(err){ fail(err); } finally{ $('deliverBtn').disabled=false; }
+};
+
+/* ---------- report ---------- */
+['rSupplier','rStatus','rFrom','rTo'].forEach(id=>$(id).onchange=render);
+$('refreshBtn').onclick = refresh;
+function filtered(){
+  const sup=$('rSupplier').value, st=$('rStatus').value;
+  const from=$('rFrom').value?new Date($('rFrom').value+'T00:00:00').getTime():-Infinity;
+  const to=$('rTo').value?new Date($('rTo').value+'T23:59:59').getTime():Infinity;
+  return S.items.filter(i=>(!sup||i.supplier===sup)&&(!st||stOf(i)===st)&&i.createdAt>=from&&i.createdAt<=to)
+    .sort((a,b)=>String(a.supplier).localeCompare(b.supplier,'ar')||a.createdAt-b.createdAt);
+}
+function renderReport(){
+  if(S.view!=='report') return;
+  const rows=filtered(), c={pending:0,delivered:0,credited:0}; rows.forEach(r=>c[stOf(r)]++);
+  const q=rows.reduce((s,r)=>s+(+r.qty||0),0);
+  $('stats').innerHTML=`<div class="stat"><b>${rows.length}</b><span>ايتم (مجموع العدد ${q})</span></div>
+    <div class="stat"><b style="color:var(--pending)">${c.pending}</b><span>بانتظار التسليم</span></div>
+    <div class="stat"><b style="color:var(--done)">${c.delivered}</b><span>مسلّم – لم يُنزّل</span></div>
+    <div class="stat"><b style="color:var(--accent)">${c.credited}</b><span>منزّل من الحساب</span></div>`;
+  if(!rows.length){ $('reportBody').innerHTML=`<div class="empty-state"><b>لا توجد نتائج</b>غيّر المذخر أو الفترة.</div>`; return; }
+  const isAdmin=S.me.role==='admin';
+  $('reportBody').innerHTML=`<div class="tablewrap"><table><thead><tr><th>صورة</th><th>المذخر</th><th>الايتم</th><th>العدد</th><th>الإضافة</th><th>التسليم</th><th>المندوب</th><th>الحالة</th><th>منزّل من الحساب؟</th></tr></thead><tbody>
+  ${rows.map(r=>{const s=stOf(r); return `<tr><td>${thumb(r)}</td><td>${esc(r.supplier)}</td>
+    <td>${esc(r.item||'(بالصورة)')}${r.invoice?`<div class="hint">قائمة ${esc(r.invoice)}</div>`:''}</td><td>${r.qty}</td>
+    <td>${fD(r.createdAt)}<div class="hint">${esc(r.createdBy||'')}</div></td>
+    <td>${r.deliveredAt?fDT(r.deliveredAt):'—'}${r.deliveredAt&&isAdmin?`<div><button class="linkbtn red" data-undo="${r.id}">تراجع</button></div>`:''}</td>
+    <td>${esc(r.repName||'—')}</td><td><span class="pill ${s}">${stLbl[s]}</span></td>
+    <td>${r.status==='delivered'?`<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" data-credit="${r.id}" ${r.credited?'checked':''} style="width:18px;height:18px;accent-color:var(--accent)">${r.credited?`<span class="hint">${fD(r.creditedAt)}</span>`:'<span class="hint">لا</span>'}</label>`:'<span class="hint">—</span>'}</td></tr>`}).join('')}
+  </tbody></table></div>`;
+}
+$('reportBody').onchange = async e => { const id=e.target.dataset.credit; if(!id) return; const on=e.target.checked;
+  try{ await call('setCredited', S.token, [id], on); toast(on?'تم تأشير التنزيل من الحساب':'أُلغي التأشير'); refresh(); }catch(err){ e.target.checked=!on; fail(err); } };
+$('reportBody').onclick = async e => { const id=e.target.dataset.undo; if(!id) return;
+  if(S.confirm!==id){ S.confirm=id; e.target.textContent='اضغط للتأكيد'; return; } S.confirm=null;
+  try{ await call('undoDeliver', S.token, id); toast('رجع لقائمة الانتظار'); refresh(); }catch(err){ fail(err); } };
+
+function reportText(){
+  const rows=filtered(), sup=$('rSupplier').value;
+  return `كشف مردودات${sup?' – '+sup:''}\n${$('rFrom').value||''}${$('rTo').value?' إلى '+$('rTo').value:''}\n` +
+    rows.map((r,i)=>`${i+1}) ${r.item||'(بالصورة)'} × ${r.qty}${sup?'':' | '+r.supplier} | أُضيف ${fD(r.createdAt)} | ${r.deliveredAt?'سُلّم '+fD(r.deliveredAt)+' للمندوب '+(r.repName||''):'لم يُسلّم'}${r.status==='delivered'?(r.credited?' | منزّل ✓':' | غير منزّل'):''}`).join('\n') +
+    `\n\nالمجموع: ${rows.length} ايتم`;
+}
+$('copyBtn').onclick = () => { const t=reportText();
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('تم النسخ — الصقه بالواتساب'))
+  .catch(()=>{ const f=$('copyFallback'); f.value=t; f.hidden=false; f.select(); toast('حدّد النص وانسخه'); }); };
+$('csvBtn').onclick = () => {
+  const cell=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const lines=[['المذخر','الايتم','العدد','سبب الإرجاع','رقم القائمة','ملاحظة','تاريخ الإضافة','أضافه','تاريخ التسليم','المندوب','الحالة','تاريخ التنزيل من الحساب'].map(cell).join(',')]
+    .concat(filtered().map(r=>[r.supplier,r.item,r.qty,r.reason,r.invoice,r.note,fD(r.createdAt),r.createdBy,r.deliveredAt?fDT(r.deliveredAt):'',r.repName,stLbl[stOf(r)],r.creditedAt?fD(r.creditedAt):''].map(cell).join(',')));
+  const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`مردودات-${$('rSupplier').value||'الكل'}-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+};
+
+/* ---------- users ---------- */
+async function loadUsers(){
+  try{ const us=await call('listUsers', S.token);
+    $('userList').innerHTML = us.map(u=>`<div class="urow"><div><b>${esc(u.displayName)}</b> <span class="hint" dir="ltr">${esc(u.username)}</span> · <span class="hint">${u.role==='admin'?'مدير':'صيدلاني'}${u.active?'':' · موقوف'}</span></div>
+      <div class="row" style="flex:0 0 auto;gap:12px"><button class="linkbtn" data-reset="${esc(u.username)}">كلمة سر جديدة</button>
+      ${u.username!==S.me.username?`<button class="linkbtn ${u.active?'red':''}" data-act="${esc(u.username)}" data-on="${u.active?0:1}">${u.active?'إيقاف':'تفعيل'}</button>
+      <button class="linkbtn red" data-deluser="${esc(u.username)}">${S.confirm==='u:'+u.username?'اضغط مرة ثانية للحذف':'حذف'}</button>`:''}</div></div>`).join('');
+  }catch(e){ fail(e); }
+}
+$('addUserBtn').onclick = async () => {
+  try{ await call('addUser', S.token, {displayName:$('nuName').value, username:$('nuUser').value, password:$('nuPass').value, role:$('nuRole').value});
+    toast(`تم إنشاء الحساب: ${$('nuUser').value.trim().toLowerCase()}`); ['nuName','nuUser','nuPass'].forEach(i=>$(i).value=''); loadUsers(); }
+  catch(e){ fail(e); }
+};
+$('userList').onclick = async e => {
+  const r=e.target.dataset.reset, a=e.target.dataset.act, du=e.target.dataset.deluser;
+  if(du){
+    if(S.confirm!=='u:'+du){ S.confirm='u:'+du; e.target.textContent='اضغط مرة ثانية للحذف'; setTimeout(()=>{ if(S.confirm==='u:'+du){ S.confirm=null; loadUsers(); } },4000); return; }
+    S.confirm=null;
+    try{ await call('deleteUser', S.token, du); toast('تم حذف الحساب'); }catch(err){ fail(err); }
+    return loadUsers();
+  }
+  if(r){ const pw=Math.random().toString(36).slice(2,8)+Math.floor(Math.random()*90+10);
+    try{ await call('resetPassword', S.token, r, pw); $('banner').innerHTML=`<div class="note">كلمة السر الجديدة لـ <b dir="ltr">${esc(r)}</b>: <b dir="ltr">${pw}</b> — دزها له وخليه يغيرها من الإعدادات.</div>`; window.scrollTo(0,0); }catch(err){ fail(err); } }
+  if(a){ try{ await call('setUserActive', S.token, a, e.target.dataset.on==='1'); loadUsers(); }catch(err){ fail(err); } }
+};
+$('cpBtn').onclick = async () => { try{ await call('changePassword', S.token, $('cpOld').value, $('cpNew').value); $('cpOld').value=$('cpNew').value=''; toast('تم تغيير كلمة السر'); }catch(e){ fail(e); } };
+
+function render(){ renderPending(); renderReport(); }
+
+/* =====================================================================
+ *  قائمة الأدوية والأسعار
+ *  تنحفظ نسخة منها بالموبايل، والمسح والبحث يصيرون فوراً بدون انتظار.
+ *  كل دقيقة ونص (والتبويب مفتوح) تنسحب التعديلات الجديدة بس.
+ * ===================================================================== */
+const I = {id:0,name:1,bc:2,ex:3,sci:4,sb:5,ss:6,ut:7,ub:8,bb:9,bs:10};
+const CAT = { items:[], byId:new Map(), pos:new Map(), byCode:new Map(), since:0, loaded:false, syncing:null, lastSync:0 };
+const FINE = window.matchMedia && matchMedia('(pointer:fine)').matches;   // كمبيوتر بماوس (وغالباً قارئ USB)
+const P = { id:null, code:null, mode:null, edit:false, linkQ:'' };       // حالة شاشة الأسعار
+
+const norm = s => String(s||'').toLowerCase()
+  .replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/[ً-ْ]/g,'')
+  .replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+const fmtP = n => n==null ? '—' : Number(n).toLocaleString('en-US');
+const codesOf = it => [it[I.bc]].concat(String(it[I.ex]||'').split(',')).map(c=>String(c||'').trim()).filter(Boolean);
+const catKey = () => 'rt-cat-' + (S.me ? S.me.username : '');
+
+function catIndexOne(it){ it._n = norm(it[I.name]+' '+it[I.sci]); it._s = norm(it[I.sci]); codesOf(it).forEach(c=>CAT.byCode.set(c,it)); }
+function catReindex(){
+  CAT.byId=new Map(); CAT.pos=new Map(); CAT.byCode=new Map();
+  CAT.items.forEach((it,i)=>{ CAT.byId.set(it[0],it); CAT.pos.set(it[0],i); catIndexOne(it); });
+}
+function catPut(list){
+  let codesChanged=false;
+  list.forEach(it=>{
+    if(CAT.pos.has(it[0])){ const i=CAT.pos.get(it[0]); const old=CAT.items[i]; if(codesOf(old).join()!==codesOf(it).join()) codesChanged=true; CAT.items[i]=it; }
+    else { CAT.pos.set(it[0], CAT.items.length); CAT.items.push(it); }
+    CAT.byId.set(it[0],it); catIndexOne(it);
+  });
+  if(codesChanged) catReindex();
+}
+function catSave(){ try{ localStorage.setItem(catKey(), JSON.stringify({since:CAT.since, items:CAT.items})); }catch(e){ try{ localStorage.removeItem(catKey()); }catch(_){} } }
+function catLoad(){
+  try{ const d=JSON.parse(localStorage.getItem(catKey())||'null'); if(d && Array.isArray(d.items)){ CAT.items=d.items; CAT.since=d.since||0; CAT.loaded=CAT.items.length>0; } }catch(e){}
+  catReindex(); catInfo();
+}
+function catReset(){ CAT.items=[]; CAT.since=0; CAT.loaded=false; catReindex(); P.id=P.code=P.mode=null; }
+function catInfo(){
+  const t = CAT.items.length ? `${CAT.items.length.toLocaleString('en-US')} مادة` : '';
+  const priced = CAT.items.filter(it=>it[I.sb]!=null).length;
+  if($('catInfo')) $('catInfo').textContent = CAT.syncing && !CAT.loaded ? 'جاري تحميل قائمة الأدوية لأول مرة…' :
+    (CAT.items.length ? `${t} · ${priced.toLocaleString('en-US')} منها بيها سعر` : 'قائمة الأدوية فارغة. المدير يستوردها من الإعدادات.');
+  if($('itemsCount')) $('itemsCount').textContent = CAT.items.length ? `${t} بالنظام، ${priced.toLocaleString('en-US')} منها بيها سعر بيع.` : 'ماكو أدوية بالنظام بعد.';
+}
+async function catSync(full){
+  if(!S.token) return;
+  if(CAT.syncing) return CAT.syncing;
+  const since = full || !CAT.loaded ? 0 : Math.max(0, CAT.since - 5000);
+  CAT.syncing = (async () => {
+    catInfo();
+    let offset=0, now=null, got=[];
+    do{
+      const r = await call('itemsSync', S.token, since, offset);
+      if(now===null) now=r.now;
+      got = got.concat(r.items); offset = r.next;
+      if(!since && $('catInfo')) $('catInfo').textContent = `جاري تحميل قائمة الأدوية… ${got.length.toLocaleString('en-US')} / ${r.total.toLocaleString('en-US')}`;
+    } while(offset!==null && offset!==undefined);
+    if(!since){ CAT.items=got; catReindex(); } else if(got.length) catPut(got);
+    CAT.since=now; CAT.loaded=true; CAT.lastSync=Date.now(); catSave();
+    if(got.length && S.view==='prices') renderPrices(true);
+  })().catch(fail).finally(()=>{ CAT.syncing=null; catInfo(); });
+  return CAT.syncing;
+}
+function lookupCode(code){
+  code=String(code||'').trim(); if(!code) return null;
+  const tries=[code, code.replace(/^0+/,''), '0'+code];
+  for(const c of tries){ const it=CAT.byCode.get(c); if(it) return it; }
+  return null;
+}
+function searchItems(q, limit){
+  const t = norm(q).split(' ').filter(Boolean); if(!t.length) return [];
+  const out=[];
+  for(const it of CAT.items){ if(t.every(w=>it._n.includes(w))) out.push(it); }
+  const q0=t[0];
+  out.sort((a,b)=> (b._n.startsWith(q0)-a._n.startsWith(q0)) || ((b[I.sb]!=null)-(a[I.sb]!=null)) || a[I.name].length-b[I.name].length);
+  return out.slice(0, limit||30);
+}
+const looksLikeCode = q => /^[0-9A-Za-z\-]{4,}$/.test(q.trim()) && /\d/.test(q);
+
+/* ---------- شاشة الأسعار ---------- */
+let pqT=null;
+$('pq').addEventListener('input', () => { clearTimeout(pqT); pqT=setTimeout(()=>{ P.mode=null; renderPrices(); }, 120); });
+$('pq').addEventListener('keydown', e => {
+  if(e.key!=='Enter') return;
+  e.preventDefault(); clearTimeout(pqT);
+  const q=$('pq').value.trim(); if(!q) return;
+  if(looksLikeCode(q)) showCode(q);
+  else { const r=searchItems(q,1); if(r.length) showItem(r[0][0]); }
+});
+function showCode(code){
+  const it = lookupCode(code);
+  if(it) showItem(it[0], code); else { P.mode='notfound'; P.code=code; P.id=null; P.edit=false; P.linkQ=''; renderPrices(); }
+  if(FINE){ $('pq').value=code; $('pq').select(); }
+}
+function showItem(id, code){ P.mode='item'; P.id=id; P.code=code||null; P.edit=false; renderPrices(); if(FINE) $('pq').select(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+function priceHTML(it){
+  const sb=it[I.sb], ss=it[I.ss], admin=S.me&&S.me.role==='admin';
+  let h='';
+  if(sb==null && ss==null) h+=`<div class="noprice">ما محدد سعر لهذي المادة بعد</div>`;
+  else {
+    h+=`<div class="prices"><div class="price"><span>سعر البيع${ss!=null&&ss!==sb?' – علبة':''}</span><b>${fmtP(sb)}</b><small>د.ع</small></div>`;
+    if(ss!=null && ss!==sb) h+=`<div class="price"><span>سعر البيع – شريط</span><b>${fmtP(ss)}</b><small>د.ع</small></div>`;
+    h+=`</div>`;
+  }
+  if(admin && (it[I.bb]!=null || it[I.bs]!=null)){
+    const m = it[I.bb] && sb ? Math.round((sb-it[I.bb])/it[I.bb]*100) : null;
+    h+=`<div class="prices"><div class="price buy"><span>سعر الشراء – علبة (يشوفه المدير بس)</span><b>${fmtP(it[I.bb])}</b><small>د.ع</small></div>
+        ${m!==null?`<div class="price buy"><span>الربح</span><b style="color:${m<0?'var(--danger)':'var(--accent)'}">${m}%</b></div>`:''}</div>`;
+  }
+  return h;
+}
+function editHTML(it){
+  const admin=S.me.role==='admin', v=x=>x==null?'':x;
+  return `<form class="panel" id="editForm" style="padding:12px">
+    ${admin?`<label>اسم المادة <input type="text" id="eName" value="${esc(it[I.name])}" dir="ltr"></label>
+             <label>الاسم العلمي <input type="text" id="eSci" value="${esc(it[I.sci])}" dir="ltr"></label>`:''}
+    <div class="row">
+      <label>سعر البيع – علبة <input type="text" id="eSb" inputmode="decimal" value="${v(it[I.sb])}" dir="ltr"></label>
+      <label>سعر البيع – شريط <span class="hint">(اختياري)</span><input type="text" id="eSs" inputmode="decimal" value="${v(it[I.ss])}" dir="ltr"></label>
+    </div>
+    ${admin?`<div class="row">
+      <label>سعر الشراء – علبة <input type="text" id="eBb" inputmode="decimal" value="${v(it[I.bb])}" dir="ltr"></label>
+      <label>سعر الشراء – شريط <input type="text" id="eBs" inputmode="decimal" value="${v(it[I.bs])}" dir="ltr"></label></div>`:''}
+    <div class="pactions"><button class="btn" id="eSave">حفظ</button><button class="btn ghost" type="button" data-p="cancel">إلغاء</button></div>
+  </form>`;
+}
+function altsHTML(it){
+  if(!it._s) return '';
+  const alts = CAT.items.filter(x=>x._s===it._s && x[0]!==it[0]).sort((a,b)=>(a[I.sb]==null)-(b[I.sb]==null) || (a[I.sb]||0)-(b[I.sb]||0)).slice(0,8);
+  if(!alts.length) return '';
+  return `<div class="alts"><h4>بدائل بنفس المادة الفعالة (${esc(it[I.sci])})</h4>${alts.map(rowHTML).join('')}</div>`;
+}
+function rowHTML(it){
+  return `<button type="button" class="prow" data-open="${esc(it[0])}"><span class="l"><div>${esc(it[I.name])}</div>${it[I.sci]?`<span class="hint">${esc(it[I.sci])}</span>`:''}</span>
+    <span class="r ${it[I.sb]==null?'none':''}">${it[I.sb]==null?'بلا سعر':fmtP(it[I.sb])}</span></button>`;
+}
+function renderPrices(fromSync){
+  if(!$('pResult')) return;
+  const q=$('pq').value.trim();
+  if(P.mode==='item'){
+    const it=CAT.byId.get(P.id); if(!it){ P.mode=null; return renderPrices(); }
+    if(fromSync && P.edit) return;               // لا نخرب فورم التعديل
+    const meta=[];
+    if(it[I.ut]) meta.push(`آخر تعديل: ${esc(it[I.ub]||'—')} · ${fD(it[I.ut])}`);
+    $('pResult').innerHTML = `<div class="pcard">
+      <div><div class="pname">${esc(it[I.name])}</div>${it[I.sci]?`<div class="psci">${esc(it[I.sci])}</div>`:''}</div>
+      ${P.edit ? editHTML(it) : priceHTML(it)}
+      ${P.edit?'':`<div class="pactions"><button class="btn ${it[I.sb]==null?'':'ghost'} small" type="button" data-p="edit">${it[I.sb]==null?'حدد السعر':'تعديل السعر'}</button></div>`}
+      <div class="pmeta">${meta.join('')}${codesOf(it).length?`<span class="codes">${codesOf(it).map(esc).join(' · ')}</span>`:'<span>بلا باركود</span>'}</div>
+      ${P.edit?'':altsHTML(it)}
+    </div>`;
+    $('pList').innerHTML='';
+    if(P.edit){ const f=$('eSb'); f.focus(); f.select(); }
+    return;
+  }
+  if(P.mode==='notfound'){
+    const res = P.linkQ ? searchItems(P.linkQ, 12) : [];
+    $('pResult').innerHTML = `<div class="pcard">
+      <div class="noprice">ما لكَيت هذا الباركود بالقائمة: <b dir="ltr">${esc(P.code)}</b></div>
+      <div class="hint">إذا المادة موجودة بالقائمة بس بباركود ثاني، ابحث عنها واربطها. من المرة الجاية تنلكَى بالمسح مباشرة.</div>
+      <input type="search" id="linkQ" placeholder="ابحث باسم المادة حتى تربطها" value="${esc(P.linkQ)}" dir="auto">
+      <div class="plist">${res.map(it=>`<button type="button" class="prow" data-link="${esc(it[0])}"><span class="l"><div>${esc(it[I.name])}</div>${it[I.sci]?`<span class="hint">${esc(it[I.sci])}</span>`:''}</span><span class="r">ربط</span></button>`).join('')}
+        ${P.linkQ && !res.length?'<div class="hint">ما لكَيت مادة بهذا الاسم.</div>':''}</div>
+      <details ${P.linkQ && !res.length?'open':''}><summary class="linkbtn" style="text-decoration:none">المادة ما موجودة أصلاً؟ أضفها كمادة جديدة</summary>
+        <form class="panel" id="newItemForm" style="padding:12px;margin-top:10px">
+          <label>اسم المادة <input type="text" id="nName" dir="ltr" value="${esc(P.linkQ)}"></label>
+          <label>الاسم العلمي <span class="hint">(اختياري)</span><input type="text" id="nSci" dir="ltr"></label>
+          <div class="row"><label>سعر البيع – علبة <input type="text" id="nSb" inputmode="decimal" dir="ltr"></label>
+            <label>سعر البيع – شريط <span class="hint">(اختياري)</span><input type="text" id="nSs" inputmode="decimal" dir="ltr"></label></div>
+          <button class="btn" id="nSave">إضافة المادة مع الباركود</button>
+        </form></details>
+    </div>`;
+    $('pList').innerHTML='';
+    const lq=$('linkQ'); lq.oninput = () => { clearTimeout(lq.t); lq.t=setTimeout(()=>{ P.linkQ=lq.value; const pos=lq.selectionStart; renderPrices(); const n=$('linkQ'); n.focus(); n.setSelectionRange(pos,pos); },150); };
+    return;
+  }
+  $('pResult').innerHTML='';
+  if(!q){ $('pList').innerHTML = CAT.items.length ? '' : (CAT.syncing ? '' : `<div class="empty-state"><b>قائمة الأدوية فارغة</b>المدير يستورد ملف الأدوية من الإعدادات ← قائمة الأدوية.</div>`); return; }
+  const res = searchItems(q, 30);
+  const exact = looksLikeCode(q) ? lookupCode(q) : null;
+  $('pList').innerHTML = `<div class="plist">${exact?rowHTML(exact):''}${res.filter(x=>x!==exact).map(rowHTML).join('')}</div>` +
+    (!res.length && !exact ? `<div class="empty-state" style="margin-top:10px"><b>ما لكَيت نتائج</b>${looksLikeCode(q)?'اضغط Enter حتى تربط هذا الباركود بمادة أو تضيفها.':'جرّب جزء من الاسم، أو الاسم العلمي.'}</div>` : '');
+}
+$('view-prices').addEventListener('click', async e => {
+  const t=e.target.closest('[data-open],[data-link],[data-p]'); if(!t) return;
+  if(t.dataset.open){ $('pq').value=''; return showItem(t.dataset.open); }
+  if(t.dataset.p==='edit'){ P.edit=true; return renderPrices(); }
+  if(t.dataset.p==='cancel'){ P.edit=false; return renderPrices(); }
+  if(t.dataset.link){
+    t.disabled=true;
+    try{ const it=await call('linkBarcode', S.token, t.dataset.link, P.code); catPut([it]); catSave(); toast('انربط الباركود ✓'); showItem(it[0], P.code); }
+    catch(err){ t.disabled=false; fail(err); }
+  }
+});
+$('view-prices').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn=e.target.querySelector('button.btn:not(.ghost)'); if(btn) btn.disabled=true;
+  try{
+    let it;
+    if(e.target.id==='editForm'){
+      const patch={ sellBox:$('eSb').value, sellStrip:$('eSs').value };
+      if($('eName')){ patch.name=$('eName').value; patch.sci=$('eSci').value; patch.buyBox=$('eBb').value; patch.buyStrip=$('eBs').value; }
+      it = await call('updateItem', S.token, P.id, patch);
+      toast('انحفظ السعر ✓');
+    } else if(e.target.id==='newItemForm'){
+      it = await call('addItem', S.token, { name:$('nName').value, sci:$('nSci').value, sellBox:$('nSb').value, sellStrip:$('nSs').value, barcode:P.code });
+      toast('انضافت المادة ✓');
+    } else return;
+    catPut([it]); catSave(); catInfo(); showItem(it[0]);
+  }catch(err){ fail(err); if(btn) btn.disabled=false; }
+});
+
+/* ---------- المسح بالكاميرا ---------- */
+const WEB = 'https:' + '/' + '/';   // بدون شرطتين متتاليتين: خادم Google يمسح كل شي بعدهن بالسطر
+const QR_LIBS = [WEB+'cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js', WEB+'unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'];
+const libCache={};
+function loadLib(urls, globalName){
+  if(window[globalName]) return Promise.resolve();
+  const key=urls[0]; if(libCache[key]) return libCache[key];
+  libCache[key] = urls.reduce((p,u)=>p.catch(()=>new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=u; s.onload=()=>window[globalName]?res():rej(); s.onerror=()=>{ s.remove(); rej(); }; document.head.appendChild(s); })), Promise.reject())
+    .catch(()=>{ delete libCache[key]; throw new Error('ما كدرت أحمّل أداة المسح، تأكد من الإنترنت'); });
+  return libCache[key];
+}
+let scanner=null, scanCb=null;
+async function openScanner(cb){
+  scanCb=cb; $('scanModal').hidden=false; $('scanMsg').textContent='جاري فتح الكاميرا…';
+  try{
+    await loadLib(QR_LIBS,'Html5Qrcode');
+    const F=Html5QrcodeSupportedFormats;
+    scanner = new Html5Qrcode('reader', { verbose:false, formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E,F.CODE_128,F.CODE_39,F.ITF,F.CODABAR,F.QR_CODE],
+      experimentalFeatures:{ useBarCodeDetectorIfSupported:true } });
+    await scanner.start({ facingMode:'environment' }, { fps:12, qrbox:(w,h)=>({ width:Math.min(300,w*0.85), height:Math.min(150,h*0.6) }) }, txt => gotScan(txt), ()=>{});
+    $('scanMsg').textContent='وجّه الكاميرا على الباركود';
+  }catch(err){
+    $('scanMsg').textContent = (err && err.message && err.message.includes('أداة')) ? err.message : 'ما كدرت أفتح الكاميرا المباشرة هنا. اضغط "صوّر الباركود" تحت.';
+  }
+}
+async function closeScanner(){
+  $('scanModal').hidden=true;
+  if(scanner){ try{ if(scanner.isScanning) await scanner.stop(); scanner.clear(); }catch(e){} scanner=null; }
+}
+async function gotScan(txt){
+  const cb=scanCb; scanCb=null; await closeScanner();
+  if(cb && txt) cb(String(txt).trim());
+}
+$('scanClose').onclick = () => { scanCb=null; closeScanner(); };
+$('scanModal').onclick = e => { if(e.target.id==='scanModal'){ scanCb=null; closeScanner(); } };
+$('scanFile').onchange = async e => {
+  const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  $('scanMsg').textContent='جاري قراءة الصورة…';
+  try{
+    await loadLib(QR_LIBS,'Html5Qrcode');
+    if(scanner && scanner.isScanning){ try{ await scanner.stop(); }catch(_){} }
+    if(!scanner){ const F=Html5QrcodeSupportedFormats; scanner=new Html5Qrcode('reader',{ verbose:false, formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E,F.CODE_128,F.CODE_39,F.ITF,F.CODABAR,F.QR_CODE] }); }
+    const txt = await scanner.scanFile(f, false);
+    gotScan(txt);
+  }catch(err){ $('scanMsg').textContent='ما انقرا الباركود. قرّب الكاميرا، خلي الباركود بالنص، وتأكد الإضاءة زينة.'; }
+};
+$('scanBtn').onclick = () => openScanner(code => { $('pq').value=code; showCode(code); });
+$('addScan').onclick = () => openScanner(async code => {
+  if(!CAT.loaded) await catSync();
+  const it=lookupCode(code);
+  if(it){ $('itemName').value=it[I.name]; toast('انكتب اسم الايتم من الباركود ✓'); }
+  else toast('هذا الباركود مو موجود بقائمة الأدوية، اكتب الاسم يدوياً');
+});
+
+/* ---------- استيراد Excel (المدير) ---------- */
+const XLSX_LIBS=[WEB+'cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', WEB+'cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'];
+function pickCols(head){
+  const h=head.map(x=>norm(x));
+  const find=(...preds)=>h.findIndex(x=>x && preds.every(p=>p.test(x)));
+  const c={
+    name: find(/اسم الماده|الاسم التجاري|^name$|item name|trade name|^المنتج$|^الصنف$/),
+    barcode: find(/باركود|barcode/),
+    sci: find(/الاسم العلمي|scientific|generic/),
+    sb: find(/بيع|sell/, /علبه|box/), ss: find(/بيع|sell/, /شريط|strip/),
+    bb: find(/شراء|buy|cost/, /علبه|box/), bs: find(/شراء|buy|cost/, /شريط|strip/)
+  };
+  if(c.sb<0) c.sb=find(/سعر البيع|sell|^السعر$|^price$/);
+  if(c.bb<0) c.bb=find(/سعر الشراء|buy price|cost/);
+  return c;
+}
+$('impBtn').onclick = async () => {
+  const f=$('impFile').files[0], msg=$('impMsg');
+  if(!f){ toast('اختار ملف Excel أول'); return; }
+  $('impBtn').disabled=true; msg.innerHTML='<div class="note">جاري قراءة الملف…</div>';
+  try{
+    await loadLib(XLSX_LIBS,'XLSX');
+    const wb=XLSX.read(await f.arrayBuffer(), {type:'array'});
+    const all=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, raw:true, defval:null});
+    let hi=all.findIndex(r=>r && pickCols(r).name>=0);
+    if(hi<0) throw new Error('ما لكَيت عمود "اسم المادة" بالملف');
+    const c=pickCols(all[hi]);
+    const g=(r,i)=> i<0 ? null : (r[i]===undefined ? null : r[i]);
+    const rows=all.slice(hi+1).filter(r=>r && g(r,c.name)!=null && String(g(r,c.name)).trim())
+      .map(r=>[String(g(r,c.name)).trim(), g(r,c.barcode)==null?'':String(g(r,c.barcode)).trim(), g(r,c.sci)==null?'':String(g(r,c.sci)).trim(), g(r,c.sb), g(r,c.ss), g(r,c.bb), g(r,c.bs)]);
+    if(!rows.length) throw new Error('الملف ما بيه مواد');
+    const tot={added:0,updated:0,same:0,skipped:0};
+    const CH=1000;
+    for(let i=0;i<rows.length;i+=CH){
+      const pct=Math.round(i/rows.length*100);
+      msg.innerHTML=`<div class="note">جاري الاستيراد… ${i.toLocaleString('en-US')} / ${rows.length.toLocaleString('en-US')}</div><div class="bar"><i style="width:${pct}%"></i></div>`;
+      const r=await call('importItems', S.token, rows.slice(i,i+CH), {prices:$('impPrices').checked});
+      ['added','updated','same','skipped'].forEach(k=>tot[k]+=r[k]);
+    }
+    msg.innerHTML=`<div class="note ok">تم الاستيراد ✓ مواد جديدة: ${tot.added.toLocaleString('en-US')} · تحدّثت: ${tot.updated.toLocaleString('en-US')} · ما تغيّرت: ${tot.same.toLocaleString('en-US')}</div>`;
+    $('impFile').value='';
+    await catSync(true);
+  }catch(err){ msg.innerHTML=`<div class="note err">${esc(err.message||'صار خطأ بالاستيراد')}</div>`; }
+  finally{ $('impBtn').disabled=false; }
+};
+
+/* ---------- زر العين لإظهار كلمة السر ---------- */
+const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.1A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-2.4 3.4M6.6 6.6C3.7 8.5 2 12 2 12s3.5 7 10 7c1.9 0 3.6-.6 5-1.5"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M3 3l18 18"/></svg>';
+document.querySelectorAll('input[type=password]').forEach(inp => {
+  const wrap = document.createElement('span'); wrap.className = 'pw';
+  inp.parentNode.insertBefore(wrap, inp); wrap.appendChild(inp);
+  const b = document.createElement('button'); b.type='button'; b.className='eye'; b.innerHTML=EYE; b.setAttribute('aria-label','إظهار كلمة السر');
+  b.onclick = () => { const show = inp.type==='password'; inp.type = show?'text':'password'; b.innerHTML = show?EYE_OFF:EYE; b.setAttribute('aria-label', show?'إخفاء كلمة السر':'إظهار كلمة السر'); inp.focus(); };
+  wrap.appendChild(b);
+});
+
+/* ---------- boot ---------- */
+const rep=store.get('rt-rep'); if(rep) $('repName').value=rep;
+S.token = store.get('rt-token');
+if(S.token) enter(); else $('loginView').hidden=false;
+})();
+</script>
+</body>
+</html>
