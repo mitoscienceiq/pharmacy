@@ -53,8 +53,10 @@ textarea{resize:vertical;min-height:60px}
 .btn.small{padding:6px 10px;font-size:.85rem}
 .linkbtn{background:none;border:0;color:var(--accent);font:inherit;font-size:.85rem;cursor:pointer;padding:0;text-decoration:underline}
 .linkbtn.red{color:var(--danger)}
-.photo-drop{border:2px dashed var(--line);border-radius:var(--r);background:var(--bg);min-height:150px;display:grid;place-items:center;text-align:center;cursor:pointer;overflow:hidden;padding:12px}
+.photo-drop{position:relative;border:2px dashed var(--line);border-radius:var(--r);background:var(--bg);min-height:150px;display:grid;place-items:center;text-align:center;cursor:pointer;overflow:hidden;padding:12px}
 .photo-drop img{max-height:260px;max-width:100%;border-radius:6px}
+.photo-x{position:absolute;top:8px;left:8px;width:36px;height:36px;border-radius:50%;border:0;background:rgb(0 0 0 / .65);color:#fff;font-size:20px;line-height:1;display:grid;place-items:center;cursor:pointer;padding:0}
+.photo-x[hidden]{display:none}
 .photo-drop .ph{color:var(--muted)}.photo-drop .ph b{display:block;color:var(--fg);font-family:var(--f-display)}
 .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:500;z-index:20;max-width:90vw;text-align:center}
 .note{padding:10px 12px;border-radius:8px;background:var(--pending-soft);color:var(--pending);font-size:.88rem;margin-bottom:12px}
@@ -194,6 +196,7 @@ label.chk input{margin-top:5px;accent-color:var(--accent)}
       <div class="photo-drop" id="photoDrop" tabindex="0">
         <div class="ph" id="photoPh"><b>📷 صورة الايتم</b>اضغط لتصوير الايتم<br><span class="hint">خلي الاسم والعدد واضحين</span></div>
         <img id="photoPreview" alt="" hidden>
+        <button type="button" class="photo-x" id="photoClear" aria-label="إلغاء الصورة" title="إلغاء الصورة" hidden>✕</button>
       </div>
       <input type="file" id="photoInput" accept="image/*" capture="environment" hidden>
       <div id="aiHint" class="note" hidden style="margin:0"></div>
@@ -219,7 +222,7 @@ label.chk input{margin-top:5px;accent-color:var(--accent)}
     <div class="handover" id="handover" hidden>
       <div><b id="selCount">0</b> ايتم محدد للتسليم</div>
       <div class="row">
-        <input type="text" id="repName" placeholder="اسم المندوب المستلم">
+        <div class="hint" style="flex:1 1 auto;align-self:center" id="deliverWho"></div>
         <button class="btn" id="deliverBtn" type="button" style="flex:0 0 auto">تأكيد التسليم</button>
         <button class="btn ghost" id="clearSelBtn" type="button" style="flex:0 0 auto">إلغاء</button>
       </div>
@@ -384,9 +387,17 @@ function setView(v){
 
 /* ---------- photo ---------- */
 $('photoDrop').onclick = () => $('photoInput').click();
+/* إلغاء الصورة: يمسحها ويمسح الاسم والعدد اللي انقروا منها */
+function clearPhoto(){
+  if(S.aiFill){ if($('itemName').value===S.aiFill.item) $('itemName').value=''; if(String($('qty').value)===String(S.aiFill.qty)) $('qty').value=''; }
+  S.aiFill=null; S.photoData=null; autoRead.n++;
+  $('aiHint').hidden=true; $('photoPreview').hidden=true; $('photoPreview').removeAttribute('src');
+  $('photoPh').hidden=false; $('photoClear').hidden=true; $('photoInput').value='';
+}
+$('photoClear').onclick = e => { e.stopPropagation(); clearPhoto(); };
 $('photoInput').onchange = async e => {
   const f=e.target.files[0]; if(!f) return;
-  try{ S.photoData = await compress(f); $('photoPreview').src=S.photoData; $('photoPreview').hidden=false; $('photoPh').hidden=true; }
+  try{ S.photoData = await compress(f); $('photoPreview').src=S.photoData; $('photoPreview').hidden=false; $('photoPh').hidden=true; $('photoClear').hidden=false; }
   catch(err){ toast('تعذّر قراءة الصورة'); return; }
   autoRead(S.photoData);
 };
@@ -399,9 +410,9 @@ async function autoRead(data){
     const r = await call('analyzePhoto', S.token, data);
     if(tag!==autoRead.n) return;                       // صورة أحدث انأخذت
     if(!r.ok){ $('aiHint').hidden = r.reason==='no_key'; $('aiHint').textContent='ما كدرت أقرا الصورة، اكتب الاسم والعدد يدوياً.'; return; }
-    const filled=[];
-    if(r.item && !$('itemName').value.trim()){ $('itemName').value=r.item; filled.push('الاسم'); }
-    if(r.qty && !$('qty').value){ $('qty').value=r.qty; filled.push('العدد'); }
+    const filled=[]; S.aiFill={item:null,qty:null};
+    if(r.item && !$('itemName').value.trim()){ $('itemName').value=r.item; S.aiFill.item=$('itemName').value; filled.push('الاسم'); }
+    if(r.qty && !$('qty').value){ $('qty').value=r.qty; S.aiFill.qty=$('qty').value; filled.push('العدد'); }
     if(filled.length){ $('aiHint').className='note ok'; $('aiHint').textContent=`انقرا ${filled.join(' و')} تلقائياً — راجعهم قبل الحفظ${r.qty?'':'. العدد ما انحسب، اكتبه يدوياً'}.`; }
     else $('aiHint').textContent = r.item||r.qty ? 'الحقول مكتوبة من قبل، ما غيرتها.' : 'ما كدرت أقرا الصورة بوضوح، اكتب الاسم والعدد يدوياً.';
   }catch(e){ if(tag===autoRead.n){ $('aiHint').textContent='ما كدرت أقرا الصورة، اكتب الاسم والعدد يدوياً.'; } }
@@ -410,10 +421,10 @@ autoRead.n=0;
 function compress(file){
   return new Promise((res, rej) => {
     const url=URL.createObjectURL(file), img=new Image();
-    img.onload=()=>{ let max=1200,q=.7,out;
+    img.onload=()=>{ const max=800; let q=.6,out;
       for(let i=0;i<5;i++){ const s=Math.min(1,max/Math.max(img.width,img.height)), c=document.createElement('canvas');
         c.width=Math.round(img.width*s); c.height=Math.round(img.height*s); c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-        out=c.toDataURL('image/jpeg',q); if(out.length<400000) break; max*=.8; q-=.07; }
+        out=c.toDataURL('image/jpeg',q); if(out.length<270000) break; q=Math.max(.35,q-.07); }
       URL.revokeObjectURL(url); res(out); };
     img.onerror=rej; img.src=url;
   });
@@ -446,7 +457,7 @@ $('addForm').addEventListener('submit', async e => {
   try{
     await call('addReturn', S.token, { supplier:sup, item:$('itemName').value, qty:$('qty').value, reason:$('reason').value, invoice:$('invoice').value, note:$('note').value, photo:S.photoData });
     store.set('rt-supp', sup);
-    S.photoData=null; autoRead.n++; $('aiHint').hidden=true; $('photoPreview').hidden=true; $('photoPh').hidden=false; $('photoInput').value='';
+    clearPhoto();
     ['itemName','qty','invoice','note'].forEach(i=>$(i).value=''); $('reason').value='';
     toast('تم حفظ المردود ✓'); refresh();
   }catch(err){ fail(err); }
@@ -486,7 +497,7 @@ function renderPending(){
         </div></div>`).join('')}</div></div>`;
   }).join('');
   const n=[...S.selected].filter(id=>pend.some(p=>p.id===id)).length;
-  $('selCount').textContent=n; $('handover').hidden=n===0;
+  $('selCount').textContent=n; $('handover').hidden=n===0; $('deliverWho').textContent = S.me ? 'يتسجل التسليم باسم: '+S.me.displayName : '';
 }
 $('pendingList').onchange = e => { const id=e.target.dataset.sel; if(!id) return; e.target.checked?S.selected.add(id):S.selected.delete(id); render(); };
 $('pendingList').onclick = async e => {
@@ -499,14 +510,14 @@ $('pendingList').onclick = async e => {
 };
 $('clearSelBtn').onclick = () => { S.selected.clear(); render(); };
 $('deliverBtn').onclick = async () => {
-  const ids=[...S.selected], rep=$('repName').value.trim();
-  if(!rep){ toast('اكتب اسم المندوب'); return $('repName').focus(); }
+  const ids=[...S.selected], by=S.me.displayName;
   $('deliverBtn').disabled=true;
-  try{ const n=await call('deliver', S.token, ids, rep); S.selected.clear(); store.set('rt-rep', rep); toast(`تم تسجيل تسليم ${n} ايتم ✓`); refresh(); }
+  try{ const n=await call('deliver', S.token, ids, by); S.selected.clear(); toast(`تم تسجيل تسليم ${n} ايتم باسم ${by} ✓`); refresh(); }
   catch(err){ fail(err); } finally{ $('deliverBtn').disabled=false; }
 };
 
 /* ---------- report ---------- */
+const dBy = r => r.deliveredBy || r.repName || '';
 ['rSupplier','rStatus','rFrom','rTo'].forEach(id=>$(id).onchange=render);
 $('refreshBtn').onclick = refresh;
 function filtered(){
@@ -526,12 +537,12 @@ function renderReport(){
     <div class="stat"><b style="color:var(--accent)">${c.credited}</b><span>منزّل من الحساب</span></div>`;
   if(!rows.length){ $('reportBody').innerHTML=`<div class="empty-state"><b>لا توجد نتائج</b>غيّر المذخر أو الفترة.</div>`; return; }
   const isAdmin=S.me.role==='admin';
-  $('reportBody').innerHTML=`<div class="tablewrap"><table><thead><tr><th>صورة</th><th>المذخر</th><th>الايتم</th><th>العدد</th><th>الإضافة</th><th>التسليم</th><th>المندوب</th><th>الحالة</th><th>منزّل من الحساب؟</th></tr></thead><tbody>
+  $('reportBody').innerHTML=`<div class="tablewrap"><table><thead><tr><th>صورة</th><th>المذخر</th><th>الايتم</th><th>العدد</th><th>الإضافة</th><th>التسليم</th><th>سلّمه</th><th>الحالة</th><th>منزّل من الحساب؟</th></tr></thead><tbody>
   ${rows.map(r=>{const s=stOf(r); return `<tr><td>${thumb(r)}</td><td>${esc(r.supplier)}</td>
     <td>${esc(r.item||'(بالصورة)')}${r.invoice?`<div class="hint">قائمة ${esc(r.invoice)}</div>`:''}</td><td>${r.qty}</td>
     <td>${fD(r.createdAt)}<div class="hint">${esc(r.createdBy||'')}</div></td>
     <td>${r.deliveredAt?fDT(r.deliveredAt):'—'}${r.deliveredAt&&isAdmin?`<div><button class="linkbtn red" data-undo="${r.id}">تراجع</button></div>`:''}</td>
-    <td>${esc(r.repName||'—')}</td><td><span class="pill ${s}">${stLbl[s]}</span></td>
+    <td>${esc(dBy(r)||'—')}</td><td><span class="pill ${s}">${stLbl[s]}</span></td>
     <td>${r.status==='delivered'?`<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" data-credit="${r.id}" ${r.credited?'checked':''} style="width:18px;height:18px;accent-color:var(--accent)">${r.credited?`<span class="hint">${fD(r.creditedAt)}</span>`:'<span class="hint">لا</span>'}</label>`:'<span class="hint">—</span>'}</td></tr>`}).join('')}
   </tbody></table></div>`;
 }
@@ -544,7 +555,7 @@ $('reportBody').onclick = async e => { const id=e.target.dataset.undo; if(!id) r
 function reportText(){
   const rows=filtered(), sup=$('rSupplier').value;
   return `كشف مردودات${sup?' – '+sup:''}\n${$('rFrom').value||''}${$('rTo').value?' إلى '+$('rTo').value:''}\n` +
-    rows.map((r,i)=>`${i+1}) ${r.item||'(بالصورة)'} × ${r.qty}${sup?'':' | '+r.supplier} | أُضيف ${fD(r.createdAt)} | ${r.deliveredAt?'سُلّم '+fD(r.deliveredAt)+' للمندوب '+(r.repName||''):'لم يُسلّم'}${r.status==='delivered'?(r.credited?' | منزّل ✓':' | غير منزّل'):''}`).join('\n') +
+    rows.map((r,i)=>`${i+1}) ${r.item||'(بالصورة)'} × ${r.qty}${sup?'':' | '+r.supplier} | أُضيف ${fD(r.createdAt)} | ${r.deliveredAt?'سُلّم '+fD(r.deliveredAt)+(dBy(r)?' – سلّمه '+dBy(r):''):'لم يُسلّم'}${r.status==='delivered'?(r.credited?' | منزّل ✓':' | غير منزّل'):''}`).join('\n') +
     `\n\nالمجموع: ${rows.length} ايتم`;
 }
 $('copyBtn').onclick = () => { const t=reportText();
@@ -552,8 +563,8 @@ $('copyBtn').onclick = () => { const t=reportText();
   .catch(()=>{ const f=$('copyFallback'); f.value=t; f.hidden=false; f.select(); toast('حدّد النص وانسخه'); }); };
 $('csvBtn').onclick = () => {
   const cell=v=>`"${String(v??'').replace(/"/g,'""')}"`;
-  const lines=[['المذخر','الايتم','العدد','سبب الإرجاع','رقم القائمة','ملاحظة','تاريخ الإضافة','أضافه','تاريخ التسليم','المندوب','الحالة','تاريخ التنزيل من الحساب'].map(cell).join(',')]
-    .concat(filtered().map(r=>[r.supplier,r.item,r.qty,r.reason,r.invoice,r.note,fD(r.createdAt),r.createdBy,r.deliveredAt?fDT(r.deliveredAt):'',r.repName,stLbl[stOf(r)],r.creditedAt?fD(r.creditedAt):''].map(cell).join(',')));
+  const lines=[['المذخر','الايتم','العدد','سبب الإرجاع','رقم القائمة','ملاحظة','تاريخ الإضافة','أضافه','تاريخ التسليم','سلّمه','الحالة','تاريخ التنزيل من الحساب'].map(cell).join(',')]
+    .concat(filtered().map(r=>[r.supplier,r.item,r.qty,r.reason,r.invoice,r.note,fD(r.createdAt),r.createdBy,r.deliveredAt?fDT(r.deliveredAt):'',dBy(r),stLbl[stOf(r)],r.creditedAt?fD(r.creditedAt):''].map(cell).join(',')));
   const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download=`مردودات-${$('rSupplier').value||'الكل'}-${new Date().toISOString().slice(0,10)}.csv`;
@@ -915,7 +926,7 @@ document.querySelectorAll('input[type=password]').forEach(inp => {
 });
 
 /* ---------- boot ---------- */
-const rep=store.get('rt-rep'); if(rep) $('repName').value=rep;
+store.set('rt-rep', null);
 S.token = store.get('rt-token');
 if(S.token) enter(); else $('loginView').hidden=false;
 })();
