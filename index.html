@@ -106,6 +106,11 @@ h3{font-family:var(--f-display);font-size:1rem;margin:0}
 .credit{text-align:center;color:var(--muted);font-size:.78rem;letter-spacing:.04em;margin:14px 0 0}
 .credit b{color:var(--accent);font-weight:600}
 nav.tabs button.gear{flex:0 0 42px;padding:8px 0}
+@media (max-width:440px){nav.tabs{gap:3px;overflow-x:auto;scrollbar-width:none}nav.tabs::-webkit-scrollbar{display:none}nav.tabs button{flex:1 0 auto;white-space:nowrap;font-size:.76rem;padding:7px 5px;gap:3px}nav.tabs button.gear{flex:0 0 34px;padding:7px 0}nav.tabs .count{padding:0 5px}}
+.rx-item{grid-template-columns:auto 64px 1fr}
+.rx-item.posted{border-color:var(--accent);background:var(--accent-soft)}
+.rx-tick{display:grid;place-items:center;gap:2px;font-size:.7rem;color:var(--muted);cursor:pointer}
+.rx-tick input{width:26px;height:26px;accent-color:var(--accent);cursor:pointer}
 nav.tabs button.gear svg{width:18px;height:18px}
 .search-row{display:flex;gap:8px;align-items:stretch;min-width:0}
 .search-row input{flex:1;min-width:0}
@@ -167,7 +172,7 @@ label.chk input{margin-top:5px;accent-color:var(--accent)}
 <!-- APP -->
 <section id="appView" hidden>
   <header class="top">
-    <div><h1>نظام إدارة الصيدلية</h1><p class="sub">الأسعار والمردودات</p></div>
+    <div><h1>نظام إدارة الصيدلية</h1><p class="sub">الأسعار والمردودات والوصفات</p></div>
     <div class="who" id="who"></div>
   </header>
   <nav class="tabs">
@@ -175,6 +180,7 @@ label.chk input{margin-top:5px;accent-color:var(--accent)}
     <button data-view="add">مردود</button>
     <button data-view="pending">التسليم <span class="count" id="pendingCount">0</span></button>
     <button data-view="report">الكشوفات</button>
+    <button data-view="rx">الوصفات <span class="count" id="rxCount" hidden>0</span></button>
     <button data-view="settings" class="gear" aria-label="الإعدادات" title="الإعدادات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </nav>
   <div id="banner"></div>
@@ -250,6 +256,27 @@ label.chk input{margin-top:5px;accent-color:var(--accent)}
     </div>
     <div class="stats" id="stats"></div>
     <div id="reportBody"></div>
+  </section>
+
+  <section id="view-rx" hidden>
+    <form class="panel" id="rxForm">
+      <div class="hint">وصفات المخدرات والمؤثرات العقلية. اسمك والتاريخ يتسجلون تلقائياً.</div>
+      <div class="photo-drop" id="rxDrop" tabindex="0">
+        <div class="ph" id="rxPh"><b>📷 صورة الوصفة</b>اضغط لتصوير الوصفة<br><span class="hint">خلي الوصفة كاملة والكتابة واضحة</span></div>
+        <img id="rxPreview" alt="" hidden>
+        <button type="button" class="photo-x" id="rxClear" aria-label="إلغاء الصورة" title="إلغاء الصورة" hidden>✕</button>
+      </div>
+      <input type="file" id="rxInput" accept="image/*" capture="environment" hidden>
+      <div class="row">
+        <label style="flex:0 1 130px">عدد الأشرطة <input type="number" id="rxStrips" min="1" inputmode="numeric"></label>
+        <label>الشركة <input type="text" id="rxCompany" list="rxCompanies" dir="auto" autocomplete="off"></label>
+      </div>
+      <datalist id="rxCompanies"></datalist>
+      <button class="btn" id="rxSave">حفظ الوصفة</button>
+    </form>
+    <div class="group-h" style="margin:18px 0 10px"><h2>الوصفات <span class="hint" id="rxSum"></span></h2>
+      <select id="rxFilter" style="width:auto"><option value="open">غير مُرحّلة</option><option value="posted">مُرحّلة</option><option value="">الكل</option></select></div>
+    <div id="rxList"></div>
   </section>
 
   <section id="view-settings" hidden>
@@ -347,7 +374,7 @@ $('loginForm').addEventListener('submit', async e => {
   catch(err){ $('lErr').textContent=err.message; $('lErr').hidden=false; }
   finally{ $('lBtn').disabled=false; }
 });
-function logoutLocal(){ document.querySelectorAll('.pw input').forEach(i=>{ i.type='password'; i.nextSibling.innerHTML=EYE; }); S.token=null; store.set('rt-token',null); catReset(); $('appView').hidden=true; $('loginView').hidden=false; }
+function logoutLocal(){ document.querySelectorAll('.pw input').forEach(i=>{ i.type='password'; i.nextSibling.innerHTML=EYE; }); S.token=null; store.set('rt-token',null); catReset(); S.rx=[]; rxClearPhoto(); $('rxCount').hidden=true; $('appView').hidden=true; $('loginView').hidden=false; }
 $('logoutBtn').addEventListener('click', async ()=>{ try{ await call('logout', S.token) }catch(e){} logoutLocal(); });
 
 async function enter(){
@@ -358,7 +385,8 @@ async function enter(){
   if(!S.me) return;
   catLoad();
   const v = store.get('rt-view');
-  setView(['prices','add','pending','report','settings'].includes(v) ? v : 'prices');
+  setView(['prices','add','pending','report','rx','settings'].includes(v) ? v : 'prices');
+  rxLoad();
   catSync();
 }
 async function refresh(){
@@ -377,11 +405,12 @@ async function refresh(){
 document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => setView(b.dataset.view));
 function setView(v){
   S.view=v; document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on', b.dataset.view===v));
-  ['prices','add','pending','report','settings'].forEach(x => $('view-'+x).hidden = x!==v);
+  ['prices','add','pending','report','rx','settings'].forEach(x => $('view-'+x).hidden = x!==v);
   store.set('rt-view', v);
   clearInterval(setView.t);
   if(v==='prices'){ renderPrices(); catSync(); setView.t=setInterval(()=>{ if(!document.hidden) catSync(); }, 90000); if(FINE) $('pq').focus(); }
   else if(v==='add') render();
+  else if(v==='rx'){ rxRender(); rxLoad(); }
   else { refresh(); if(v==='settings') catInfo(); }
 }
 
@@ -418,13 +447,13 @@ async function autoRead(data){
   }catch(e){ if(tag===autoRead.n){ $('aiHint').textContent='ما كدرت أقرا الصورة، اكتب الاسم والعدد يدوياً.'; } }
 }
 autoRead.n=0;
-function compress(file){
+function compress(file, MAX=800, Q=.6, CAP=270000){
   return new Promise((res, rej) => {
     const url=URL.createObjectURL(file), img=new Image();
-    img.onload=()=>{ const max=800; let q=.6,out;
+    img.onload=()=>{ const max=MAX; let q=Q,out;
       for(let i=0;i<5;i++){ const s=Math.min(1,max/Math.max(img.width,img.height)), c=document.createElement('canvas');
         c.width=Math.round(img.width*s); c.height=Math.round(img.height*s); c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-        out=c.toDataURL('image/jpeg',q); if(out.length<270000) break; q=Math.max(.35,q-.07); }
+        out=c.toDataURL('image/jpeg',q); if(out.length<CAP) break; q=Math.max(.35,q-.07); }
       URL.revokeObjectURL(url); res(out); };
     img.onerror=rej; img.src=url;
   });
@@ -514,6 +543,71 @@ $('deliverBtn').onclick = async () => {
   $('deliverBtn').disabled=true;
   try{ const n=await call('deliver', S.token, ids, by); S.selected.clear(); toast(`تم تسجيل تسليم ${n} ايتم باسم ${by} ✓`); refresh(); }
   catch(err){ fail(err); } finally{ $('deliverBtn').disabled=false; }
+};
+
+/* ---------- وصفات المخدرات والمؤثرات العقلية ---------- */
+S.rx=[]; S.rxPhoto=null;
+$('rxDrop').onclick = () => $('rxInput').click();
+function rxClearPhoto(){ S.rxPhoto=null; $('rxPreview').hidden=true; $('rxPreview').removeAttribute('src'); $('rxPh').hidden=false; $('rxClear').hidden=true; $('rxInput').value=''; }
+$('rxClear').onclick = e => { e.stopPropagation(); rxClearPhoto(); };
+$('rxInput').onchange = async e => {
+  const f=e.target.files[0]; if(!f) return;
+  /* الوصفة كتابة يدوية، فتنحفظ بدقة أعلى من صور المردودات حتى تبقى مقروءة */
+  try{ S.rxPhoto = await compress(f, 1400, .7, 600000); $('rxPreview').src=S.rxPhoto; $('rxPreview').hidden=false; $('rxPh').hidden=true; $('rxClear').hidden=false; }
+  catch(err){ toast('تعذّر قراءة الصورة'); }
+};
+$('rxForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if(!S.rxPhoto) return toast('صوّر الوصفة أولاً');
+  const strips=parseInt($('rxStrips').value,10);
+  if(!(strips>0)){ toast('اكتب عدد الأشرطة'); return $('rxStrips').focus(); }
+  const company=$('rxCompany').value.trim();
+  if(!company){ toast('اكتب اسم الشركة'); return $('rxCompany').focus(); }
+  $('rxSave').disabled=true; $('rxSave').textContent='جاري الحفظ…';
+  try{
+    await call('addRx', S.token, { photo:S.rxPhoto, strips, company });
+    rxClearPhoto(); $('rxStrips').value=''; $('rxCompany').value='';
+    toast('تم حفظ الوصفة ✓'); rxLoad();
+  }catch(err){ fail(err); }
+  finally{ $('rxSave').disabled=false; $('rxSave').textContent='حفظ الوصفة'; }
+});
+async function rxLoad(){ if(!S.token) return; try{ S.rx = await call('rxList', S.token) || []; }catch(e){ return; } rxRender(); }
+function rxThumb(r){
+  const k='rx:'+r.id;
+  if(!r.hasPhoto) return `<div class="thumb">بلا صورة</div>`;
+  if(S.photos[k]) return `<img class="thumb" src="${S.photos[k]}" data-zoom="${k}" alt="">`;
+  if(!loadingP.has(k)){ loadingP.add(k); call('getRxPhoto', S.token, r.id).then(d=>{ if(d){ S.photos[k]=d; rxRender(); } }).catch(()=>{}); }
+  return `<div class="thumb">…</div>`;
+}
+function rxRender(){
+  const open=S.rx.filter(r=>!r.posted).length;
+  $('rxCount').textContent=open; $('rxCount').hidden=!open;
+  $('rxCompanies').innerHTML=[...new Set(S.rx.map(r=>r.company).filter(Boolean))].sort().map(c=>`<option value="${esc(c)}">`).join('');
+  if(S.view!=='rx') return;
+  const f=$('rxFilter').value, isAdmin=S.me&&S.me.role==='admin';
+  const l=S.rx.filter(r=>!f||(f==='open'?!r.posted:r.posted)).sort((a,b)=>b.createdAt-a.createdAt);
+  $('rxSum').textContent=`(${l.length})`;
+  if(!l.length){ $('rxList').innerHTML=`<div class="empty-state"><b>${f==='open'?'كل الوصفات مُرحّلة ✓':'لا توجد وصفات'}</b>${f==='open'?'الوصفة الجديدة تظهر هنا لحين ترحيلها بالسجل.':''}</div>`; return; }
+  $('rxList').innerHTML=`<div class="items">${l.map(r=>`<div class="item rx-item ${r.posted?'posted':''}">
+    <label class="rx-tick" title="${r.posted?'مُرحّلة بالسجل':'تأشير الترحيل بالسجل'}"><input type="checkbox" data-post="${r.id}" ${r.posted?'checked':''} ${r.posted&&!isAdmin?'disabled':''}>${r.posted?'مُرحّلة':'ترحيل'}</label>
+    ${rxThumb(r)}
+    <div class="meta"><div class="name"><span class="qty">${r.strips} شريط</span> · ${esc(r.company)}</div>
+      <div class="line2"><span>${fDT(r.createdAt)}</span><span>${esc(r.createdBy||'')}</span></div>
+      ${r.posted?`<div class="line2"><span>✓ رُحّلت ${fD(r.postedAt)}${r.postedBy?' – '+esc(r.postedBy):''}</span></div>`:''}
+      ${!r.posted&&(isAdmin||r.createdBy===S.me.displayName)?`<div class="line2"><button class="linkbtn red" data-rxdel="${r.id}">${S.confirm===r.id?'اضغط مرة ثانية لتأكيد الحذف':'حذف'}</button></div>`:''}
+    </div></div>`).join('')}</div>`;
+}
+$('rxFilter').onchange = rxRender;
+$('rxList').onchange = async e => {
+  const id=e.target.dataset.post; if(!id) return; const on=e.target.checked;
+  try{ await call('setRxPosted', S.token, id, on); toast(on?'تم تأشير الترحيل ✓':'أُلغي التأشير'); rxLoad(); }
+  catch(err){ e.target.checked=!on; fail(err); }
+};
+$('rxList').onclick = async e => {
+  const d=e.target.dataset.rxdel; if(!d) return;
+  if(S.confirm!==d){ S.confirm=d; rxRender(); setTimeout(()=>{ if(S.confirm===d){ S.confirm=null; rxRender(); } },4000); return; }
+  S.confirm=null;
+  try{ await call('deleteRx', S.token, d); toast('تم الحذف'); rxLoad(); }catch(err){ fail(err); }
 };
 
 /* ---------- report ---------- */
