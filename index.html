@@ -175,12 +175,11 @@ label.chk input{margin-top:5px;accent-color:var(--accent)}
 <!-- APP -->
 <section id="appView" hidden>
   <header class="top">
-    <div><h1>نظام إدارة الصيدلية</h1><p class="sub">الأسعار والمردودات والوصفات</p></div>
+    <div><h1>نظام إدارة الصيدلية</h1><p class="sub">المردودات والوصفات</p></div>
     <div class="who" id="who"></div>
   </header>
   <nav class="tabs">
-    <button data-view="prices" class="on">الأسعار</button>
-    <button data-view="add">مردود</button>
+    <button data-view="add" class="on">مردود</button>
     <button data-view="pending">التسليم <span class="count" id="pendingCount">0</span></button>
     <button data-view="report">الكشوفات</button>
     <button data-view="rx">الوصفات <span class="count" id="rxCount" hidden>0</span></button>
@@ -188,7 +187,7 @@ label.chk input{margin-top:5px;accent-color:var(--accent)}
   </nav>
   <div id="banner"></div>
 
-  <section id="view-prices">
+  <section id="view-prices" hidden>
     <div class="panel">
       <div class="search-row">
         <input type="search" id="pq" placeholder="امسح الباركود أو اكتب اسم الدواء" autocomplete="off" dir="auto" enterkeyhint="search">
@@ -390,7 +389,7 @@ async function enter(){
   if(!S.me) return;
   catLoad();
   const v = store.get('rt-view');
-  setView(['prices','add','pending','report','rx','settings'].includes(v) ? v : 'prices');
+  setView(['add','pending','report','rx','settings'].includes(v) ? v : 'add');
   rxLoad();
   catSync();
 }
