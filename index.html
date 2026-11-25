@@ -57,7 +57,10 @@ textarea{resize:vertical;min-height:60px}
 .photo-drop img{max-height:260px;max-width:100%;border-radius:6px}
 .photo-x{position:absolute;top:8px;left:8px;width:36px;height:36px;border-radius:50%;border:0;background:rgb(0 0 0 / .65);color:#fff;font-size:20px;line-height:1;display:grid;place-items:center;cursor:pointer;padding:0}
 .photo-x[hidden]{display:none}
-.photo-drop .ph{color:var(--muted)}.photo-drop .ph b{display:block;color:var(--fg);font-family:var(--f-display)}
+.photo-drop .ph{color:var(--muted)}
+.src-btns{display:flex;gap:8px;justify-content:center;margin:10px 0 6px;flex-wrap:wrap}
+.src-btns button{border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;font-weight:500;padding:9px 14px;border-radius:999px;cursor:pointer}
+.src-btns button:first-child{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}.photo-drop .ph b{display:block;color:var(--fg);font-family:var(--f-display)}
 .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:500;z-index:20;max-width:90vw;text-align:center}
 .note{padding:10px 12px;border-radius:8px;background:var(--pending-soft);color:var(--pending);font-size:.88rem;margin-bottom:12px}
 .note.err{background:var(--danger-soft);color:var(--danger)}
@@ -200,11 +203,12 @@ label.chk input{margin-top:5px;accent-color:var(--accent)}
   <section id="view-add" hidden>
     <form class="panel" id="addForm">
       <div class="photo-drop" id="photoDrop" tabindex="0">
-        <div class="ph" id="photoPh"><b>📷 صورة الايتم</b>اضغط لتصوير الايتم<br><span class="hint">خلي الاسم والعدد واضحين</span></div>
+        <div class="ph" id="photoPh"><b>📷 صورة الايتم</b><div class="src-btns"><button type="button" id="photoCam">📷 الكاميرا</button><button type="button" id="photoGalBtn">🖼️ من الهاتف</button></div><span class="hint">خلي الاسم والعدد واضحين</span></div>
         <img id="photoPreview" alt="" hidden>
         <button type="button" class="photo-x" id="photoClear" aria-label="إلغاء الصورة" title="إلغاء الصورة" hidden>✕</button>
       </div>
       <input type="file" id="photoInput" accept="image/*" capture="environment" hidden>
+      <input type="file" id="photoGallery" accept="image/*" hidden>
       <div id="aiHint" class="note" hidden style="margin:0"></div>
       <label>المذخر <select id="supplier"></select></label>
       <div class="row">
@@ -262,11 +266,12 @@ label.chk input{margin-top:5px;accent-color:var(--accent)}
     <form class="panel" id="rxForm">
       <div class="hint">وصفات المخدرات والمؤثرات العقلية. اسمك والتاريخ يتسجلون تلقائياً.</div>
       <div class="photo-drop" id="rxDrop" tabindex="0">
-        <div class="ph" id="rxPh"><b>📷 صورة الوصفة</b>اضغط لتصوير الوصفة<br><span class="hint">خلي الوصفة كاملة والكتابة واضحة</span></div>
+        <div class="ph" id="rxPh"><b>📷 صورة الوصفة</b><div class="src-btns"><button type="button" id="rxCam">📷 الكاميرا</button><button type="button" id="rxGalBtn">🖼️ من الهاتف</button></div><span class="hint">خلي الوصفة كاملة والكتابة واضحة</span></div>
         <img id="rxPreview" alt="" hidden>
         <button type="button" class="photo-x" id="rxClear" aria-label="إلغاء الصورة" title="إلغاء الصورة" hidden>✕</button>
       </div>
       <input type="file" id="rxInput" accept="image/*" capture="environment" hidden>
+      <input type="file" id="rxGallery" accept="image/*" hidden>
       <div class="row">
         <label style="flex:0 1 130px">عدد الأشرطة <input type="number" id="rxStrips" min="1" inputmode="numeric"></label>
         <label>الشركة <input type="text" id="rxCompany" list="rxCompanies" dir="auto" autocomplete="off"></label>
@@ -416,12 +421,14 @@ function setView(v){
 
 /* ---------- photo ---------- */
 $('photoDrop').onclick = () => $('photoInput').click();
+$('photoCam').onclick = e => { e.stopPropagation(); $('photoInput').click(); };
+$('photoGalBtn').onclick = e => { e.stopPropagation(); $('photoGallery').click(); };
 /* إلغاء الصورة: يمسحها ويمسح الاسم والعدد اللي انقروا منها */
 function clearPhoto(){
   if(S.aiFill){ if($('itemName').value===S.aiFill.item) $('itemName').value=''; if(String($('qty').value)===String(S.aiFill.qty)) $('qty').value=''; }
   S.aiFill=null; S.photoData=null; autoRead.n++;
   $('aiHint').hidden=true; $('photoPreview').hidden=true; $('photoPreview').removeAttribute('src');
-  $('photoPh').hidden=false; $('photoClear').hidden=true; $('photoInput').value='';
+  $('photoPh').hidden=false; $('photoClear').hidden=true; $('photoInput').value=''; $('photoGallery').value='';
 }
 $('photoClear').onclick = e => { e.stopPropagation(); clearPhoto(); };
 $('photoInput').onchange = async e => {
@@ -430,6 +437,7 @@ $('photoInput').onchange = async e => {
   catch(err){ toast('تعذّر قراءة الصورة'); return; }
   autoRead(S.photoData);
 };
+$('photoGallery').onchange = $('photoInput').onchange;
 
 /* قراءة اسم الايتم والعدد من الصورة — يملي الحقول الفارغة فقط، والصيدلاني يراجع */
 async function autoRead(data){
@@ -548,7 +556,9 @@ $('deliverBtn').onclick = async () => {
 /* ---------- وصفات المخدرات والمؤثرات العقلية ---------- */
 S.rx=[]; S.rxPhoto=null;
 $('rxDrop').onclick = () => $('rxInput').click();
-function rxClearPhoto(){ S.rxPhoto=null; $('rxPreview').hidden=true; $('rxPreview').removeAttribute('src'); $('rxPh').hidden=false; $('rxClear').hidden=true; $('rxInput').value=''; }
+$('rxCam').onclick = e => { e.stopPropagation(); $('rxInput').click(); };
+$('rxGalBtn').onclick = e => { e.stopPropagation(); $('rxGallery').click(); };
+function rxClearPhoto(){ S.rxPhoto=null; $('rxPreview').hidden=true; $('rxPreview').removeAttribute('src'); $('rxPh').hidden=false; $('rxClear').hidden=true; $('rxInput').value=''; $('rxGallery').value=''; }
 $('rxClear').onclick = e => { e.stopPropagation(); rxClearPhoto(); };
 $('rxInput').onchange = async e => {
   const f=e.target.files[0]; if(!f) return;
@@ -556,6 +566,7 @@ $('rxInput').onchange = async e => {
   try{ S.rxPhoto = await compress(f, 1400, .7, 600000); $('rxPreview').src=S.rxPhoto; $('rxPreview').hidden=false; $('rxPh').hidden=true; $('rxClear').hidden=false; }
   catch(err){ toast('تعذّر قراءة الصورة'); }
 };
+$('rxGallery').onchange = $('rxInput').onchange;
 $('rxForm').addEventListener('submit', async e => {
   e.preventDefault();
   if(!S.rxPhoto) return toast('صوّر الوصفة أولاً');
